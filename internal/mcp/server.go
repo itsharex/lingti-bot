@@ -25,6 +25,7 @@ func NewServer() *server.MCPServer {
 	registerProcessTools(s)
 	registerNetworkTools(s)
 	registerCalendarTools(s)
+	registerFileManagerTools(s)
 
 	return s
 }
@@ -192,4 +193,34 @@ func registerCalendarTools(s *server.MCPServer) {
 		mcp.WithString("calendar", mcp.Description("Calendar name to search in (optional)")),
 		mcp.WithString("date", mcp.Description("Date of the event (format: 2024-01-15, optional)")),
 	), tools.CalendarDeleteEvent)
+}
+
+func registerFileManagerTools(s *server.MCPServer) {
+	// file_list_old
+	s.AddTool(mcp.NewTool("file_list_old",
+		mcp.WithDescription("List files that haven't been modified for a specified number of days"),
+		mcp.WithString("path", mcp.Required(), mcp.Description("Directory path to scan (e.g., ~/Desktop)")),
+		mcp.WithNumber("days", mcp.Description("Minimum days since last modification (default: 30)")),
+	), tools.FileListOld)
+
+	// file_delete_old
+	s.AddTool(mcp.NewTool("file_delete_old",
+		mcp.WithDescription("Delete files that haven't been modified for a specified number of days"),
+		mcp.WithString("path", mcp.Required(), mcp.Description("Directory path to clean (e.g., ~/Desktop)")),
+		mcp.WithNumber("days", mcp.Description("Minimum days since last modification (default: 30)")),
+		mcp.WithBoolean("include_dirs", mcp.Description("Also delete old directories (default: false)")),
+		mcp.WithBoolean("dry_run", mcp.Description("Only show what would be deleted without actually deleting (default: false)")),
+	), tools.FileDeleteOld)
+
+	// file_delete_list
+	s.AddTool(mcp.NewTool("file_delete_list",
+		mcp.WithDescription("Delete specific files by their paths"),
+		mcp.WithArray("files", mcp.Required(), mcp.Description("Array of file paths to delete")),
+	), tools.FileDeleteList)
+
+	// file_trash
+	s.AddTool(mcp.NewTool("file_trash",
+		mcp.WithDescription("Move files to Trash instead of permanently deleting (macOS)"),
+		mcp.WithArray("files", mcp.Required(), mcp.Description("Array of file paths to move to Trash")),
+	), tools.FileMoveToTrash)
 }
