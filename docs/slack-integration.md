@@ -90,8 +90,9 @@ Socket Mode allows the bot to receive events without exposing a public URL.
 export SLACK_BOT_TOKEN="xoxb-your-bot-token"
 export SLACK_APP_TOKEN="xapp-your-app-token"
 export ANTHROPIC_API_KEY="sk-ant-your-api-key"
-# Optional: custom API base URL (for proxies or alternative endpoints)
-# export ANTHROPIC_BASE_URL="https://your-proxy.com/v1"
+# Optional configuration
+export ANTHROPIC_BASE_URL="https://your-proxy.com/v1"  # Custom API base URL
+export ANTHROPIC_MODEL="claude-sonnet-4-20250514"       # Specify model
 
 lingti-bot router
 ```
@@ -102,8 +103,9 @@ lingti-bot router
 lingti-bot router \
   --slack-bot-token "xoxb-your-bot-token" \
   --slack-app-token "xapp-your-app-token" \
-  --api-key "sk-ant-your-api-key"
-  # --base-url "https://your-proxy.com/v1"  # optional
+  --api-key "sk-ant-your-api-key" \
+  --base-url "https://your-proxy.com/v1" \
+  --model "claude-sonnet-4-20250514"
 ```
 
 ### Using a .env File
@@ -114,7 +116,8 @@ Create a `.env` file:
 SLACK_BOT_TOKEN=xoxb-your-bot-token
 SLACK_APP_TOKEN=xapp-your-app-token
 ANTHROPIC_API_KEY=sk-ant-your-api-key
-# ANTHROPIC_BASE_URL=https://your-proxy.com/v1  # optional
+ANTHROPIC_BASE_URL=https://your-proxy.com/v1
+ANTHROPIC_MODEL=claude-sonnet-4-20250514
 ```
 
 Then run:

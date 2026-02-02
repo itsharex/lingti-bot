@@ -1,8 +1,8 @@
-# Feishu (飞书) Integration
+# 飞书集成指南
 
-This guide explains how to set up Feishu/Lark integration for lingti-bot's message router.
+本文档介绍如何为 lingti-bot 消息路由器配置飞书/Lark 集成。
 
-## Architecture
+## 架构
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -10,135 +10,161 @@ This guide explains how to set up Feishu/Lark integration for lingti-bot's messa
 ├─────────────────────────────────────────────────────────┤
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐   │
 │  │    Router    │  │    Agent     │  │  MCP Tools   │   │
-│  │  (messages)  │──│  (Claude)    │──│  (actions)   │   │
+│  │   (消息路由)  │──│  (Claude)    │──│   (工具)     │   │
 │  └──────────────┘  └──────────────┘  └──────────────┘   │
 └─────────────────────────────────────────────────────────┘
           │
           ▼
 ┌─────────────────┐
-│     Feishu      │
+│      飞书       │
 │   (WebSocket)   │
 └─────────────────┘
 ```
 
-## Prerequisites
+## 前置条件
 
-- A Feishu account with permission to create apps (企业自建应用)
-- An Anthropic API key for Claude
-- lingti-bot binary built and available
+- 拥有创建企业自建应用权限的飞书账号
+- Anthropic API Key (用于 Claude)
+- 已编译的 lingti-bot 二进制文件
 
-## Step 1: Create a Feishu App
+## 第一步：创建飞书应用
 
-1. Go to [Feishu Open Platform](https://open.feishu.cn/app)
-2. Click **"创建企业自建应用"** (Create Enterprise App)
-3. Fill in app details:
-   - App Name: `lingti-bot`
-   - App Description: Your bot description
-   - App Icon: Upload an icon
-4. Click **"创建"** (Create)
+1. 访问 [飞书开放平台](https://open.feishu.cn/app)
+2. 点击 **「创建企业自建应用」**
+3. 填写应用信息：
+   - 应用名称：`lingti-bot`
+   - 应用描述：填写机器人描述
+   - 应用图标：上传图标
+4. 点击 **「创建」**
 
-## Step 2: Get App Credentials
+## 第二步：获取应用凭证
 
-1. In your app settings, go to **"凭证与基础信息"** (Credentials & Basic Info)
-2. Find and copy:
-   - **App ID** - Your application's unique identifier
-   - **App Secret** - Click "查看" to reveal, then copy
+1. 在应用设置中，进入 **「凭证与基础信息」**
+2. 复制以下信息：
+   - **App ID** - 应用唯一标识
+   - **App Secret** - 点击「查看」显示后复制
 
-> **Important**: Keep your App Secret secure. Never commit it to version control.
+> **重要**：请妥善保管 App Secret，切勿提交到版本控制系统。
 
-## Step 3: Configure Bot Capabilities
+## 第三步：配置机器人能力
 
-### Enable Bot
+### 启用机器人
 
-1. Go to **"应用能力"** → **"机器人"** (Capabilities → Bot)
-2. Toggle **"启用机器人"** (Enable Bot) to ON
-3. Configure bot settings:
-   - Bot Name: `lingti-bot`
-   - Bot Description: Your bot description
+1. 进入 **「添加应用能力」** → **「机器人」**
+2. 开启 **「启用机器人」**
+3. 配置机器人信息：
+   - 机器人名称：`lingti-bot`
+   - 机器人描述：填写描述
 
-### Enable WebSocket Mode
+### 启用长连接模式
 
-1. In Bot settings, find **"消息接收方式"** (Message Receiving Method)
-2. Select **"使用长连接接收消息"** (Use WebSocket to receive messages)
+1. 在机器人设置中，找到 **「消息接收方式」**
+2. 选择 **「使用长连接接收消息」**
 
-## Step 4: Configure Permissions
+## 第四步：配置权限
 
-1. Go to **"权限管理"** (Permission Management)
-2. Add the following scopes:
+1. 进入 **「权限管理」**
+2. 添加以下权限：
 
-| Permission | Scope ID | Description |
-|------------|----------|-------------|
-| 获取与发送单聊、群组消息 | `im:message` | Send and receive messages |
-| 获取用户基本信息 | `contact:user.base:readonly` | Read user info for usernames |
-| 获取群组信息 | `im:chat:readonly` | Read chat info |
+| 权限名称 | Scope ID | 说明 |
+|---------|----------|------|
+| 获取与发送单聊、群组消息 | `im:message` | 收发消息 |
+| 获取用户基本信息 | `contact:user.base:readonly` | 读取用户名 |
+| 获取群组信息 | `im:chat:readonly` | 读取群信息 |
 
-3. Click **"批量开通"** (Batch Enable)
+3. 点击 **「批量开通」**
 
-## Step 5: Subscribe to Events
+## 第五步：首次启动 Bot 建立连接（重要）
 
-1. Go to **"事件订阅"** (Event Subscriptions)
-2. Add the following events:
+> **注意**：飞书要求应用先与平台建立首次通信，才能开通长连接功能。
 
-| Event | Event ID | Description |
-|-------|----------|-------------|
-| 接收消息 | `im.message.receive_v1` | Receive messages sent to bot |
-
-3. Ensure **"使用长连接接收事件"** (Use WebSocket for events) is enabled
-
-## Step 6: Publish the App
-
-1. Go to **"版本管理与发布"** (Version Management)
-2. Click **"创建版本"** (Create Version)
-3. Fill in version details
-4. Click **"申请发布"** (Request Publish)
-5. If you're the admin, approve the publish request
-
-> For development testing, you can use the app in "开发中" (Development) status within your own account.
-
-## Step 7: Run lingti-bot Router
-
-### Using Environment Variables
+1. 先启动一次 lingti-bot router（即使会失败也没关系）：
 
 ```bash
 export FEISHU_APP_ID="cli_your_app_id"
 export FEISHU_APP_SECRET="your_app_secret"
 export ANTHROPIC_API_KEY="sk-ant-your-api-key"
-# Optional: custom API base URL (for proxies or alternative endpoints)
-# export ANTHROPIC_BASE_URL="https://your-proxy.com/v1"
 
 lingti-bot router
 ```
 
-### Using Command-Line Flags
+2. 观察日志输出，确认已尝试连接飞书
+3. 可以按 `Ctrl+C` 停止程序
+4. 此时飞书后台会记录应用的首次通信，解锁长连接配置选项
+
+## 第六步：配置事件订阅
+
+> **注意**：必须先完成第五步，否则会出现「应用未建立长连接」错误。
+
+1. 进入 **「事件与回调」** → **「事件配置」**
+2. 在页面顶部找到 **「订阅方式」**，选择 **「使用长连接接收事件」**
+3. 点击 **「添加事件」**，搜索并添加以下事件：
+
+| 事件名称 | 事件 ID | 说明 |
+|---------|---------|------|
+| 接收消息 | `im.message.receive_v1` | 接收发送给机器人的消息 |
+
+4. 点击 **「保存」**
+
+> 如果看不到「使用长连接接收事件」选项，请先完成第三步的机器人能力配置和第五步的首次连接。
+
+## 第七步：发布应用
+
+1. 进入 **「版本管理与发布」**
+2. 点击 **「创建版本」**
+3. 填写版本信息
+4. 点击 **「申请发布」**
+5. 如果你是管理员，审批发布申请
+
+> 开发测试阶段，可以在「开发中」状态下使用应用（仅限自己的账号）。
+
+## 第八步：运行 lingti-bot Router
+
+### 使用环境变量
+
+```bash
+export FEISHU_APP_ID="cli_your_app_id"
+export FEISHU_APP_SECRET="your_app_secret"
+export ANTHROPIC_API_KEY="sk-ant-your-api-key"
+# 可选配置
+export ANTHROPIC_BASE_URL="https://your-proxy.com/v1"  # 自定义 API 地址
+export ANTHROPIC_MODEL="claude-sonnet-4-20250514"       # 指定模型
+
+lingti-bot router
+```
+
+### 使用命令行参数
 
 ```bash
 lingti-bot router \
   --feishu-app-id "cli_your_app_id" \
   --feishu-app-secret "your_app_secret" \
-  --api-key "sk-ant-your-api-key"
-  # --base-url "https://your-proxy.com/v1"  # optional
+  --api-key "sk-ant-your-api-key" \
+  --base-url "https://your-proxy.com/v1" \
+  --model "claude-sonnet-4-20250514"
 ```
 
-### Using a .env File
+### 使用 .env 文件
 
-Create a `.env` file:
+创建 `.env` 文件：
 
 ```bash
 FEISHU_APP_ID=cli_your_app_id
 FEISHU_APP_SECRET=your_app_secret
 ANTHROPIC_API_KEY=sk-ant-your-api-key
-# ANTHROPIC_BASE_URL=https://your-proxy.com/v1  # optional
+ANTHROPIC_BASE_URL=https://your-proxy.com/v1
+ANTHROPIC_MODEL=claude-sonnet-4-20250514
 ```
 
-Then run:
+然后运行：
 
 ```bash
 source .env && lingti-bot router
 ```
 
-### Running Both Slack and Feishu
+### 同时运行 Slack 和飞书
 
-You can run multiple platforms simultaneously:
+可以同时运行多个平台：
 
 ```bash
 export SLACK_BOT_TOKEN="xoxb-..."
@@ -146,84 +172,93 @@ export SLACK_APP_TOKEN="xapp-..."
 export FEISHU_APP_ID="cli_..."
 export FEISHU_APP_SECRET="..."
 export ANTHROPIC_API_KEY="sk-ant-..."
+export ANTHROPIC_BASE_URL="https://your-proxy.com/v1"  # 可选
+export ANTHROPIC_MODEL="claude-sonnet-4-20250514"       # 可选
 
 lingti-bot router
 ```
 
-## Step 8: Test the Integration
+## 第九步：测试集成
 
-1. Open Feishu app
-2. Find your bot:
-   - Search for the bot name in the search bar
-   - Or go to **"工作台"** → find your bot app
-3. Start a conversation:
-   - **Direct message**: Just send a message to the bot
-   - **Group chat**: Add the bot to a group, then @mention it
+1. 打开飞书 App
+2. 找到机器人：
+   - 在搜索栏搜索机器人名称
+   - 或进入 **「工作台」** 找到你的机器人应用
+3. 开始对话：
+   - **私聊**：直接发送消息给机器人
+   - **群聊**：将机器人添加到群组，然后 @机器人
 
-Example messages:
-- `what's on my calendar today?`
-- `@lingti-bot list files in ~/Desktop`
-- `@lingti-bot what's my system info?`
+示例消息：
+- `今天有什么日程？`
+- `@lingti-bot 列出 ~/Desktop 的文件`
+- `@lingti-bot 查看系统信息`
 
-## Available Commands
+## 可用功能
 
-Once connected, the bot can:
+连接成功后，机器人可以：
 
-| Category | Examples |
-|----------|----------|
-| **Calendar** | "What's on my calendar today?", "Schedule a meeting tomorrow at 2pm" |
-| **Files** | "List files in ~/Downloads", "Find old files on my Desktop" |
-| **System** | "What's my CPU usage?", "Show disk space" |
-| **Shell** | "Run `ls -la`", "Check git status" |
-| **Process** | "List running processes", "What's using the most memory?" |
+| 类别 | 示例 |
+|-----|------|
+| **日历** | "今天有什么日程？"、"明天下午2点安排一个会议" |
+| **文件** | "列出 ~/Downloads 的文件"、"查找桌面上的旧文件" |
+| **系统** | "CPU 使用率是多少？"、"查看磁盘空间" |
+| **Shell** | "运行 `ls -la`"、"查看 git status" |
+| **进程** | "列出运行中的进程"、"哪个程序占用内存最多？" |
 
-## Troubleshooting
+## 故障排除
 
-### Bot not responding
+### 机器人无响应
 
-1. Check that App ID and App Secret are set correctly
-2. Verify the bot is running: check router logs
-3. Ensure WebSocket mode is enabled in Feishu app settings
-4. Check that the app has been published or you're testing with the correct account
+1. 检查 App ID 和 App Secret 是否正确
+2. 查看 router 日志确认机器人正在运行
+3. 确保飞书应用设置中已启用 WebSocket 模式
+4. 检查应用是否已发布，或者是否使用正确的账号测试
 
-### "failed to verify credentials" error
+### "应用未建立长连接" 错误
 
-Your `FEISHU_APP_ID` or `FEISHU_APP_SECRET` is invalid. Double-check the credentials in the Feishu Open Platform.
+1. 进入 **「事件与回调」** → **「事件配置」**
+2. 确认 **「订阅方式」** 已选择 **「使用长连接接收事件」**
+3. 确认已添加至少一个事件（如 `im.message.receive_v1`）
+4. 点击保存后重新启动 router
 
-### Bot only works in DMs, not in groups
+### "failed to verify credentials" 错误
 
-Make sure:
-1. The bot has been added to the group
-2. You @mention the bot in group messages
-3. The `im:message` permission is enabled
+`FEISHU_APP_ID` 或 `FEISHU_APP_SECRET` 无效。请在飞书开放平台重新检查凭证。
 
-### Messages not being received
+### 机器人只在私聊有效，群聊无响应
 
-1. Verify **"使用长连接接收消息"** is enabled
-2. Check that `im.message.receive_v1` event is subscribed
-3. Ensure the app version with bot capabilities is published
+请确认：
+1. 机器人已被添加到群组
+2. 在群消息中 @机器人
+3. `im:message` 权限已启用
 
-### Permission denied errors
+### 收不到消息
 
-1. Go to Permission Management in Feishu Open Platform
-2. Ensure all required permissions are enabled
-3. If permissions were recently added, you may need to create a new app version
+1. 确认已启用 **「使用长连接接收消息」**
+2. 检查是否已订阅 `im.message.receive_v1` 事件
+3. 确保包含机器人能力的应用版本已发布
 
-## Message Format Notes
+### 权限不足错误
 
-- **DMs**: Bot responds to all direct messages
-- **Group chats**: Bot only responds when @mentioned
-- **@mentions**: The `@botname` is automatically removed from the message text before processing
+1. 在飞书开放平台进入「权限管理」
+2. 确保所有必需权限已启用
+3. 如果最近添加了新权限，可能需要创建新版本
 
-## Security Considerations
+## 消息格式说明
 
-- Never commit App Secret to version control
-- Use environment variables or a secrets manager
-- Restrict app installation to trusted organizations
-- Review bot permissions regularly
-- Consider IP whitelist for production deployments
+- **私聊**：机器人响应所有私聊消息
+- **群聊**：机器人仅在被 @提及时响应
+- **@提及**：消息文本中的 `@机器人名` 会在处理前自动移除
 
-## Running as a Service
+## 安全注意事项
+
+- 切勿将 App Secret 提交到版本控制
+- 使用环境变量或密钥管理器
+- 限制应用安装范围到可信组织
+- 定期审查机器人权限
+- 生产环境建议配置 IP 白名单
+
+## 作为服务运行
 
 ### macOS (launchd)
 
@@ -280,18 +315,18 @@ RestartSec=5
 WantedBy=multi-user.target
 ```
 
-## Lark (International) vs Feishu (China)
+## Lark（国际版）与飞书（中国版）
 
-This integration works with both:
-- **Feishu (飞书)** - China version at `open.feishu.cn`
-- **Lark** - International version at `open.larksuite.com`
+本集成同时支持：
+- **飞书** - 中国版，访问 `open.feishu.cn`
+- **Lark** - 国际版，访问 `open.larksuite.com`
 
-The SDK automatically handles the regional differences. Use the appropriate developer console for your version.
+SDK 会自动处理地区差异。请使用对应版本的开发者控制台。
 
-## References
+## 参考链接
 
-- [Feishu Open Platform](https://open.feishu.cn/)
-- [Lark Developer Documentation](https://open.larksuite.com/document)
-- [Bot Development Guide](https://open.feishu.cn/document/home/develop-a-bot-in-5-minutes/create-an-app)
-- [Event Subscription Guide](https://open.feishu.cn/document/ukTMukTMukTM/uUTNz4SN1MjL1UzM)
+- [飞书开放平台](https://open.feishu.cn/)
+- [Lark 开发者文档](https://open.larksuite.com/document)
+- [机器人开发指南](https://open.feishu.cn/document/home/develop-a-bot-in-5-minutes/create-an-app)
+- [事件订阅指南](https://open.feishu.cn/document/ukTMukTMukTM/uUTNz4SN1MjL1UzM)
 - [Lark SDK for Go](https://github.com/larksuite/oapi-sdk-go)
