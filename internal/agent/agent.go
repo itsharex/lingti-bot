@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/liushuangls/go-anthropic/v2"
 	"github.com/pltanton/lingti-bot/internal/router"
@@ -47,9 +48,33 @@ func New(cfg Config) (*Agent, error) {
 	}, nil
 }
 
+// handleBuiltinCommand handles special commands without calling Claude
+func (a *Agent) handleBuiltinCommand(msg router.Message) (router.Response, bool) {
+	text := strings.TrimSpace(strings.ToLower(msg.Text))
+
+	switch text {
+	case "/whoami", "whoami", "我是谁", "我的id":
+		return router.Response{
+			Text: fmt.Sprintf("用户信息:\n- 用户ID: %s\n- 用户名: %s\n- 平台: %s\n- 频道ID: %s",
+				msg.UserID, msg.Username, msg.Platform, msg.ChannelID),
+		}, true
+	case "/help", "help", "帮助":
+		return router.Response{
+			Text: "可用命令:\n- /whoami - 查看你的用户信息\n- /help - 显示帮助\n\n你也可以直接用自然语言和我对话！",
+		}, true
+	}
+
+	return router.Response{}, false
+}
+
 // HandleMessage processes a message and returns a response
 func (a *Agent) HandleMessage(ctx context.Context, msg router.Message) (router.Response, error) {
 	log.Printf("[Agent] Processing message from %s: %s", msg.Username, msg.Text)
+
+	// Handle built-in commands
+	if resp, handled := a.handleBuiltinCommand(msg); handled {
+		return resp, nil
+	}
 
 	// Build the tools list from MCP server
 	tools := a.buildToolsList()
