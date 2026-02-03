@@ -17,6 +17,7 @@ import (
 type Agent struct {
 	provider Provider
 	memory   *ConversationMemory
+	sessions *SessionStore
 }
 
 // Config holds agent configuration
@@ -41,6 +42,7 @@ func New(cfg Config) (*Agent, error) {
 	return &Agent{
 		provider: provider,
 		memory:   NewMemory(50, 60*time.Minute), // Keep 50 messages, 60 min TTL
+		sessions: NewSessionStore(),
 	}, nil
 }
 
@@ -72,24 +74,135 @@ func createProvider(cfg Config) (Provider, error) {
 
 // handleBuiltinCommand handles special commands without calling AI
 func (a *Agent) handleBuiltinCommand(msg router.Message) (router.Response, bool) {
-	text := strings.TrimSpace(strings.ToLower(msg.Text))
+	text := strings.TrimSpace(msg.Text)
+	textLower := strings.ToLower(text)
+	convKey := ConversationKey(msg.Platform, msg.ChannelID, msg.UserID)
 
-	switch text {
+	// Exact match commands
+	switch textLower {
 	case "/whoami", "whoami", "我是谁", "我的id":
 		return router.Response{
 			Text: fmt.Sprintf("用户信息:\n- 用户ID: %s\n- 用户名: %s\n- 平台: %s\n- 频道ID: %s",
 				msg.UserID, msg.Username, msg.Platform, msg.ChannelID),
 		}, true
-	case "/help", "help", "帮助":
+
+	case "/help", "help", "帮助", "/commands":
 		return router.Response{
-			Text: "可用命令:\n- /whoami - 查看你的用户信息\n- /new - 开始新对话（清除历史）\n- /help - 显示帮助\n\n你也可以直接用自然语言和我对话！",
+			Text: `可用命令:
+
+会话管理:
+  /new, /reset    开始新对话，清除历史
+  /status         查看当前会话状态
+
+思考模式:
+  /think off      关闭深度思考
+  /think low      简单思考
+  /think medium   中等思考（默认）
+  /think high     深度思考
+
+显示设置:
+  /verbose on     显示详细执行过程
+  /verbose off    隐藏执行过程
+
+其他:
+  /whoami         查看用户信息
+  /model          查看当前模型
+  /tools          列出可用工具
+  /help           显示帮助
+
+直接用自然语言和我对话即可！`,
 		}, true
+
 	case "/new", "/reset", "/clear", "新对话", "清除历史":
-		convKey := ConversationKey(msg.Platform, msg.ChannelID, msg.UserID)
 		a.memory.Clear(convKey)
+		a.sessions.Clear(convKey)
 		return router.Response{
-			Text: "已开始新对话，之前的对话历史已清除。",
+			Text: "已开始新对话，历史记录和会话设置已重置。",
 		}, true
+
+	case "/status", "状态":
+		history := a.memory.GetHistory(convKey)
+		settings := a.sessions.Get(convKey)
+		return router.Response{
+			Text: fmt.Sprintf(`会话状态:
+- 平台: %s
+- 用户: %s
+- 历史消息: %d 条
+- 思考模式: %s
+- 详细模式: %v
+- AI 模型: %s`,
+				msg.Platform, msg.Username, len(history),
+				settings.ThinkingLevel, settings.Verbose, a.provider.Name()),
+		}, true
+
+	case "/model", "模型":
+		return router.Response{
+			Text: fmt.Sprintf("当前模型: %s", a.provider.Name()),
+		}, true
+
+	case "/tools", "工具", "工具列表":
+		return router.Response{
+			Text: `可用工具:
+
+📁 文件操作:
+  file_list, file_read, file_trash, file_list_old
+
+📅 日历 (macOS):
+  calendar_today, calendar_list_events, calendar_create_event
+  calendar_search, calendar_delete
+
+✅ 提醒事项 (macOS):
+  reminders_list, reminders_add, reminders_complete, reminders_delete
+
+📝 备忘录 (macOS):
+  notes_list, notes_read, notes_create, notes_search
+
+🌤 天气:
+  weather_current, weather_forecast
+
+🌐 网页:
+  web_search, web_fetch, open_url
+
+📋 剪贴板:
+  clipboard_read, clipboard_write
+
+🔔 通知:
+  notification_send
+
+📸 截图:
+  screenshot
+
+🎵 音乐 (macOS):
+  music_play, music_pause, music_next, music_previous
+  music_now_playing, music_volume, music_search
+
+💻 系统:
+  system_info, shell_execute, process_list`,
+		}, true
+
+	case "/verbose on", "详细模式开":
+		a.sessions.SetVerbose(convKey, true)
+		return router.Response{Text: "详细模式已开启"}, true
+
+	case "/verbose off", "详细模式关":
+		a.sessions.SetVerbose(convKey, false)
+		return router.Response{Text: "详细模式已关闭"}, true
+
+	case "/think off", "思考关":
+		a.sessions.SetThinkingLevel(convKey, ThinkOff)
+		return router.Response{Text: "思考模式已关闭"}, true
+
+	case "/think low", "简单思考":
+		a.sessions.SetThinkingLevel(convKey, ThinkLow)
+		return router.Response{Text: "思考模式: 简单"}, true
+
+	case "/think medium", "中等思考":
+		a.sessions.SetThinkingLevel(convKey, ThinkMedium)
+		return router.Response{Text: "思考模式: 中等"}, true
+
+	case "/think high", "深度思考":
+		a.sessions.SetThinkingLevel(convKey, ThinkHigh)
+		return router.Response{Text: "思考模式: 深度"}, true
 	}
 
 	return router.Response{}, false
@@ -128,8 +241,12 @@ func (a *Agent) HandleMessage(ctx context.Context, msg router.Message) (router.R
 		homeDir = "~"
 	}
 
+	// Get session settings
+	settings := a.sessions.Get(convKey)
+	thinkingPrompt := ThinkingPrompt(settings.ThinkingLevel)
+
 	// System prompt with actual paths
-	systemPrompt := fmt.Sprintf(`You are a helpful AI assistant running on the user's computer.
+	systemPrompt := fmt.Sprintf(`You are 灵提 (Lingti), a helpful AI assistant running on the user's computer.
 
 ## System Environment
 - Operating System: %s
@@ -138,32 +255,67 @@ func (a *Agent) HandleMessage(ctx context.Context, msg router.Message) (router.R
 - Desktop: %s/Desktop
 - Documents: %s/Documents
 - Downloads: %s/Downloads
+- User: %s
 
 ## Available Tools
-- File operations: list, read, write, search, **move to trash** (file_trash). Use ~ for home directory (e.g., ~/Desktop)
-- Calendar: list events, create events, search events (macOS)
-- Reminders: list, add, complete reminders (macOS)
-- Notes: list, read, create, search notes (macOS)
-- Weather: get current weather and forecast
-- Web: search the web, fetch URL content, open URLs in browser
-- Clipboard: read and write clipboard content
-- Screenshot: capture screen
-- Music: control Spotify/Apple Music playback
-- Notifications: send system notifications
-- System info: CPU, memory, disk usage
-- Shell commands: execute commands
-- Process management: list, info, kill processes
+
+### File Operations
+- file_list: List directory contents (use ~/Desktop for desktop)
+- file_read: Read file contents
+- file_trash: Move files to trash (for delete operations)
+- file_list_old: Find old files not modified for N days
+
+### Calendar (macOS)
+- calendar_today: Get today's events
+- calendar_list_events: List upcoming events
+- calendar_create_event: Create new event
+- calendar_search: Search events
+- calendar_delete: Delete event
+
+### Reminders (macOS)
+- reminders_list: List pending reminders
+- reminders_add: Add new reminder
+- reminders_complete: Mark as complete
+- reminders_delete: Delete reminder
+
+### Notes (macOS)
+- notes_list: List notes
+- notes_read: Read note content
+- notes_create: Create new note
+- notes_search: Search notes
+
+### Weather
+- weather_current: Current weather
+- weather_forecast: Weather forecast
+
+### Web
+- web_search: Search the web (DuckDuckGo)
+- web_fetch: Fetch URL content
+- open_url: Open URL in browser
+
+### Clipboard
+- clipboard_read: Read clipboard
+- clipboard_write: Write to clipboard
+
+### System
+- system_info: System information
+- shell_execute: Execute shell command
+- process_list: List processes
+- notification_send: Send notification
+- screenshot: Capture screen
+
+### Music (macOS)
+- music_play/pause/next/previous: Playback control
+- music_now_playing: Current track info
+- music_volume: Set volume
+- music_search: Search and play
 
 ## Important Rules
-- **ALWAYS use tools when users ask you to do something** - never tell users to do things manually if a tool exists
-- When users ask to delete/trash/remove files, USE the file_trash tool to move them to trash
-- When users mention "桌面" or "Desktop", use path: ~/Desktop
-- When users mention "下载" or "Downloads", use path: ~/Downloads
-- When users mention "文档" or "Documents", use path: ~/Documents
-- Always use ~ prefix for home directory paths, the system will expand it automatically
-- Be concise and action-oriented in your responses
-- When users ask to open a website or URL, use the open_url tool
-- You have full permission to execute tools - that's your purpose`, runtime.GOOS, runtime.GOARCH, homeDir, homeDir, homeDir, homeDir)
+1. **ALWAYS use tools** - Never tell users to do things manually
+2. **Be action-oriented** - Execute tasks, don't just describe them
+3. **Use correct paths** - 桌面=~/Desktop, 下载=~/Downloads, 文档=~/Documents
+4. **Full permission** - You have full permission to execute all tools
+5. **Be concise** - Short, helpful responses%s`, runtime.GOOS, runtime.GOARCH, homeDir, homeDir, homeDir, homeDir, msg.Username, thinkingPrompt)
 
 	// Call AI provider
 	resp, err := a.provider.Chat(ctx, ChatRequest{
@@ -566,6 +718,95 @@ func (a *Agent) buildToolsList() []Tool {
 				"properties": map[string]any{"filter": map[string]string{"type": "string", "description": "Filter by name"}},
 			}),
 		},
+
+		// === GIT & GITHUB ===
+		{
+			Name:        "git_status",
+			Description: "Show git working tree status",
+			InputSchema: jsonSchema(map[string]any{"type": "object", "properties": map[string]any{}}),
+		},
+		{
+			Name:        "git_log",
+			Description: "Show recent git commits",
+			InputSchema: jsonSchema(map[string]any{
+				"type":       "object",
+				"properties": map[string]any{"limit": map[string]string{"type": "number", "description": "Number of commits (default 10)"}},
+			}),
+		},
+		{
+			Name:        "git_diff",
+			Description: "Show git diff",
+			InputSchema: jsonSchema(map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"staged": map[string]string{"type": "boolean", "description": "Show staged changes"},
+					"file":   map[string]string{"type": "string", "description": "Specific file to diff"},
+				},
+			}),
+		},
+		{
+			Name:        "git_branch",
+			Description: "List git branches",
+			InputSchema: jsonSchema(map[string]any{"type": "object", "properties": map[string]any{}}),
+		},
+		{
+			Name:        "github_pr_list",
+			Description: "List GitHub pull requests (requires gh CLI)",
+			InputSchema: jsonSchema(map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"state": map[string]string{"type": "string", "description": "Filter by state: open, closed, all"},
+					"limit": map[string]string{"type": "number", "description": "Max results (default 10)"},
+				},
+			}),
+		},
+		{
+			Name:        "github_pr_view",
+			Description: "View a GitHub pull request",
+			InputSchema: jsonSchema(map[string]any{
+				"type":       "object",
+				"properties": map[string]any{"number": map[string]string{"type": "number", "description": "PR number"}},
+				"required":   []string{"number"},
+			}),
+		},
+		{
+			Name:        "github_issue_list",
+			Description: "List GitHub issues (requires gh CLI)",
+			InputSchema: jsonSchema(map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"state": map[string]string{"type": "string", "description": "Filter by state: open, closed, all"},
+					"limit": map[string]string{"type": "number", "description": "Max results (default 10)"},
+				},
+			}),
+		},
+		{
+			Name:        "github_issue_view",
+			Description: "View a GitHub issue",
+			InputSchema: jsonSchema(map[string]any{
+				"type":       "object",
+				"properties": map[string]any{"number": map[string]string{"type": "number", "description": "Issue number"}},
+				"required":   []string{"number"},
+			}),
+		},
+		{
+			Name:        "github_issue_create",
+			Description: "Create a GitHub issue",
+			InputSchema: jsonSchema(map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"title":  map[string]string{"type": "string", "description": "Issue title"},
+					"body":   map[string]string{"type": "string", "description": "Issue body"},
+					"labels": map[string]string{"type": "string", "description": "Comma-separated labels"},
+				},
+				"required": []string{"title"},
+			}),
+		},
+		{
+			Name:        "github_repo_view",
+			Description: "View current GitHub repository info",
+			InputSchema: jsonSchema(map[string]any{"type": "object", "properties": map[string]any{}}),
+		},
 	}
 }
 
@@ -769,6 +1010,28 @@ func callToolDirect(ctx context.Context, name string, args map[string]any) strin
 			cmd = c
 		}
 		return executeShell(ctx, cmd)
+
+	// Git & GitHub
+	case "git_status":
+		return executeGitStatus(ctx)
+	case "git_log":
+		return executeGitLog(ctx, args)
+	case "git_diff":
+		return executeGitDiff(ctx, args)
+	case "git_branch":
+		return executeGitBranch(ctx)
+	case "github_pr_list":
+		return executeGitHubPRList(ctx, args)
+	case "github_pr_view":
+		return executeGitHubPRView(ctx, args)
+	case "github_issue_list":
+		return executeGitHubIssueList(ctx, args)
+	case "github_issue_view":
+		return executeGitHubIssueView(ctx, args)
+	case "github_issue_create":
+		return executeGitHubIssueCreate(ctx, args)
+	case "github_repo_view":
+		return executeGitHubRepoView(ctx)
 
 	default:
 		return fmt.Sprintf("Tool '%s' not implemented", name)

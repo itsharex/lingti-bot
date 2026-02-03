@@ -1,11 +1,13 @@
-# lingti-bot (灵提)
+# lingti-bot (灵缇)
+
+> 🚀 **更适合中国宝宝体质的 AI Bot，让 AI Bot 接入更简单**
 
 [![Go Version](https://img.shields.io/badge/Go-1.23+-00ADD8?style=flat&logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-**灵提**是一个极其易于集成的 MCP (Model Context Protocol) 服务器和多平台消息路由器，让 AI 助手能够访问你的本地计算机资源。
+**灵缇**是一个极其易于集成的 MCP (Model Context Protocol) 服务器和多平台消息路由器，让 AI 助手能够访问你的本地计算机资源。
 
-> **为什么叫"灵提"？** 灵缇犬（Greyhound）以其敏捷、忠诚著称。灵提 bot 同样敏捷高效，是你忠实的 AI 助手。
+> **为什么叫"灵缇"？** 灵缇犬（Greyhound）以其敏捷、忠诚著称。灵缇 bot 同样敏捷高效，是你忠实的 AI 助手。
 
 ## 特性
 
@@ -21,7 +23,7 @@
 
 ## 对话记忆
 
-灵提支持**多轮对话记忆**，能够记住之前的对话内容，实现连续自然的交流体验。
+灵缇支持**多轮对话记忆**，能够记住之前的对话内容，实现连续自然的交流体验。
 
 ### 工作原理
 
@@ -624,4 +626,4 @@ MIT License
 
 ---
 
-**灵提** - 你的敏捷 AI 助手 🐕
+**灵缇** - 你的敏捷 AI 助手 🐕

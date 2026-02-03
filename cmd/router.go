@@ -9,8 +9,10 @@ import (
 	"syscall"
 
 	"github.com/pltanton/lingti-bot/internal/agent"
+	"github.com/pltanton/lingti-bot/internal/platforms/discord"
 	"github.com/pltanton/lingti-bot/internal/platforms/feishu"
 	"github.com/pltanton/lingti-bot/internal/platforms/slack"
+	"github.com/pltanton/lingti-bot/internal/platforms/telegram"
 	"github.com/pltanton/lingti-bot/internal/router"
 	"github.com/spf13/cobra"
 )
@@ -20,6 +22,8 @@ var (
 	slackAppToken   string
 	feishuAppID     string
 	feishuAppSecret string
+	telegramToken   string
+	discordToken    string
 	aiProvider      string
 	aiAPIKey        string
 	aiBaseURL       string
@@ -30,14 +34,16 @@ var routerCmd = &cobra.Command{
 	Use:   "router",
 	Short: "Start the message router",
 	Long: `Start the message router to receive messages from various platforms
-(Slack, Telegram, Discord, etc.) and respond using AI.
+(Slack, Telegram, Discord, Feishu) and respond using AI.
+
+Supported platforms:
+  - Slack: SLACK_BOT_TOKEN + SLACK_APP_TOKEN
+  - Telegram: TELEGRAM_BOT_TOKEN
+  - Discord: DISCORD_BOT_TOKEN
+  - Feishu: FEISHU_APP_ID + FEISHU_APP_SECRET
 
 Required environment variables or flags:
-  - SLACK_BOT_TOKEN: Slack Bot Token (xoxb-...)
-  - SLACK_APP_TOKEN: Slack App Token (xapp-...)
-  - FEISHU_APP_ID: Feishu App ID
-  - FEISHU_APP_SECRET: Feishu App Secret
-  - AI_PROVIDER: AI provider (claude or deepseek, default: claude)
+  - AI_PROVIDER: AI provider (claude, deepseek, kimi) default: claude
   - AI_API_KEY: API Key for the AI provider
   - AI_BASE_URL: Custom API base URL (optional)
   - AI_MODEL: Model name (optional)`,
@@ -51,6 +57,8 @@ func init() {
 	routerCmd.Flags().StringVar(&slackAppToken, "slack-app-token", "", "Slack App Token (or SLACK_APP_TOKEN env)")
 	routerCmd.Flags().StringVar(&feishuAppID, "feishu-app-id", "", "Feishu App ID (or FEISHU_APP_ID env)")
 	routerCmd.Flags().StringVar(&feishuAppSecret, "feishu-app-secret", "", "Feishu App Secret (or FEISHU_APP_SECRET env)")
+	routerCmd.Flags().StringVar(&telegramToken, "telegram-token", "", "Telegram Bot Token (or TELEGRAM_BOT_TOKEN env)")
+	routerCmd.Flags().StringVar(&discordToken, "discord-token", "", "Discord Bot Token (or DISCORD_BOT_TOKEN env)")
 	routerCmd.Flags().StringVar(&aiProvider, "provider", "", "AI provider: claude or deepseek (or AI_PROVIDER env)")
 	routerCmd.Flags().StringVar(&aiAPIKey, "api-key", "", "AI API Key (or AI_API_KEY env)")
 	routerCmd.Flags().StringVar(&aiBaseURL, "base-url", "", "Custom API base URL (or AI_BASE_URL env)")
@@ -70,6 +78,12 @@ func runRouter(cmd *cobra.Command, args []string) {
 	}
 	if feishuAppSecret == "" {
 		feishuAppSecret = os.Getenv("FEISHU_APP_SECRET")
+	}
+	if telegramToken == "" {
+		telegramToken = os.Getenv("TELEGRAM_BOT_TOKEN")
+	}
+	if discordToken == "" {
+		discordToken = os.Getenv("DISCORD_BOT_TOKEN")
 	}
 	if aiProvider == "" {
 		aiProvider = os.Getenv("AI_PROVIDER")
@@ -143,6 +157,34 @@ func runRouter(cmd *cobra.Command, args []string) {
 		r.Register(feishuPlatform)
 	} else {
 		log.Println("Feishu tokens not provided, skipping Feishu integration")
+	}
+
+	// Register Telegram if token is provided
+	if telegramToken != "" {
+		telegramPlatform, err := telegram.New(telegram.Config{
+			Token: telegramToken,
+		})
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error creating Telegram platform: %v\n", err)
+			os.Exit(1)
+		}
+		r.Register(telegramPlatform)
+	} else {
+		log.Println("Telegram token not provided, skipping Telegram integration")
+	}
+
+	// Register Discord if token is provided
+	if discordToken != "" {
+		discordPlatform, err := discord.New(discord.Config{
+			Token: discordToken,
+		})
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error creating Discord platform: %v\n", err)
+			os.Exit(1)
+		}
+		r.Register(discordPlatform)
+	} else {
+		log.Println("Discord token not provided, skipping Discord integration")
 	}
 
 	// Start the router

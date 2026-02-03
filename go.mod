@@ -3,6 +3,8 @@ module github.com/pltanton/lingti-bot
 go 1.23
 
 require (
+	github.com/bwmarrin/discordgo v0.29.0
+	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	github.com/gorilla/websocket v1.5.3
 	github.com/larksuite/oapi-sdk-go/v3 v3.5.3
 	github.com/liushuangls/go-anthropic/v2 v2.14.1
@@ -28,5 +30,6 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
+	golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b // indirect
 	golang.org/x/sys v0.26.0 // indirect
 )

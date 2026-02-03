@@ -468,3 +468,107 @@ func executeMusicSearch(ctx context.Context, query string) string {
 	}
 	return extractText(result)
 }
+
+// === GIT ===
+
+func executeGitStatus(ctx context.Context) string {
+	req := mcp.CallToolRequest{}
+	req.Params.Arguments = map[string]interface{}{}
+	result, err := tools.GitStatus(ctx, req)
+	if err != nil {
+		return "Error: " + err.Error()
+	}
+	return extractText(result)
+}
+
+func executeGitLog(ctx context.Context, args map[string]any) string {
+	req := mcp.CallToolRequest{}
+	req.Params.Arguments = args
+	result, err := tools.GitLog(ctx, req)
+	if err != nil {
+		return "Error: " + err.Error()
+	}
+	return extractText(result)
+}
+
+func executeGitDiff(ctx context.Context, args map[string]any) string {
+	req := mcp.CallToolRequest{}
+	req.Params.Arguments = args
+	result, err := tools.GitDiff(ctx, req)
+	if err != nil {
+		return "Error: " + err.Error()
+	}
+	return extractText(result)
+}
+
+func executeGitBranch(ctx context.Context) string {
+	req := mcp.CallToolRequest{}
+	req.Params.Arguments = map[string]interface{}{}
+	result, err := tools.GitBranch(ctx, req)
+	if err != nil {
+		return "Error: " + err.Error()
+	}
+	return extractText(result)
+}
+
+// === GITHUB ===
+
+func executeGitHubPRList(ctx context.Context, args map[string]any) string {
+	req := mcp.CallToolRequest{}
+	req.Params.Arguments = args
+	result, err := tools.GitHubPRList(ctx, req)
+	if err != nil {
+		return "Error: " + err.Error()
+	}
+	return extractText(result)
+}
+
+func executeGitHubPRView(ctx context.Context, args map[string]any) string {
+	req := mcp.CallToolRequest{}
+	req.Params.Arguments = args
+	result, err := tools.GitHubPRView(ctx, req)
+	if err != nil {
+		return "Error: " + err.Error()
+	}
+	return extractText(result)
+}
+
+func executeGitHubIssueList(ctx context.Context, args map[string]any) string {
+	req := mcp.CallToolRequest{}
+	req.Params.Arguments = args
+	result, err := tools.GitHubIssueList(ctx, req)
+	if err != nil {
+		return "Error: " + err.Error()
+	}
+	return extractText(result)
+}
+
+func executeGitHubIssueView(ctx context.Context, args map[string]any) string {
+	req := mcp.CallToolRequest{}
+	req.Params.Arguments = args
+	result, err := tools.GitHubIssueView(ctx, req)
+	if err != nil {
+		return "Error: " + err.Error()
+	}
+	return extractText(result)
+}
+
+func executeGitHubIssueCreate(ctx context.Context, args map[string]any) string {
+	req := mcp.CallToolRequest{}
+	req.Params.Arguments = args
+	result, err := tools.GitHubIssueCreate(ctx, req)
+	if err != nil {
+		return "Error: " + err.Error()
+	}
+	return extractText(result)
+}
+
+func executeGitHubRepoView(ctx context.Context) string {
+	req := mcp.CallToolRequest{}
+	req.Params.Arguments = map[string]interface{}{}
+	result, err := tools.GitHubRepoView(ctx, req)
+	if err != nil {
+		return "Error: " + err.Error()
+	}
+	return extractText(result)
+}
