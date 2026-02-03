@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"os/exec"
+	"runtime"
 	"strings"
 	"time"
 
@@ -116,6 +117,35 @@ func executeShell(ctx context.Context, command string) string {
 	}
 
 	return result.String()
+}
+
+// executeOpenURL opens a URL in the default browser
+func executeOpenURL(ctx context.Context, url string) string {
+	if url == "" {
+		return "Error: URL is required"
+	}
+
+	// Validate URL has a scheme
+	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
+		url = "https://" + url
+	}
+
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "darwin":
+		cmd = exec.CommandContext(ctx, "open", url)
+	case "windows":
+		cmd = exec.CommandContext(ctx, "cmd", "/c", "start", url)
+	default: // linux and others
+		cmd = exec.CommandContext(ctx, "xdg-open", url)
+	}
+
+	err := cmd.Start()
+	if err != nil {
+		return "Error opening URL: " + err.Error()
+	}
+
+	return "Opened " + url + " in browser"
 }
 
 // extractText extracts text content from MCP result

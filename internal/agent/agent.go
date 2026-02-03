@@ -105,17 +105,18 @@ func (a *Agent) HandleMessage(ctx context.Context, msg router.Message) (router.R
 	}
 
 	// System prompt
-	systemPrompt := `You are a helpful AI assistant integrated with Slack. You have access to various tools to help users:
+	systemPrompt := `You are a helpful AI assistant. You have access to various tools to help users:
 
 - File operations: list, read, write, search, delete old files
 - Calendar: list events, create events, search events
 - System info: CPU, memory, disk usage
 - Shell commands: execute commands (be careful!)
-- Network: interfaces, connections, ping, DNS lookup
+- Browser: open URLs in the default web browser (use open_url tool)
 - Process management: list, info, kill
 
 When users ask you to do something, use the appropriate tools. Be concise in your responses.
-Always confirm before performing destructive actions (delete, kill process, etc.).`
+Always confirm before performing destructive actions (delete, kill process, etc.).
+When users ask to open a website or URL, use the open_url tool.`
 
 	// Call AI provider
 	resp, err := a.provider.Chat(ctx, ChatRequest{
@@ -261,6 +262,16 @@ func (a *Agent) buildToolsList() []Tool {
 				"properties": map[string]any{"filter": map[string]string{"type": "string", "description": "Filter by name"}},
 			}),
 		},
+		// Browser
+		{
+			Name:        "open_url",
+			Description: "Open a URL in the default web browser",
+			InputSchema: jsonSchema(map[string]any{
+				"type":       "object",
+				"properties": map[string]any{"url": map[string]string{"type": "string", "description": "URL to open"}},
+				"required":   []string{"url"},
+			}),
+		},
 	}
 }
 
@@ -329,6 +340,12 @@ func callToolDirect(ctx context.Context, name string, args map[string]any) strin
 			cmd = c
 		}
 		return executeShell(ctx, cmd)
+	case "open_url":
+		url := ""
+		if u, ok := args["url"].(string); ok {
+			url = u
+		}
+		return executeOpenURL(ctx, url)
 	default:
 		return fmt.Sprintf("Tool '%s' not implemented in direct mode", name)
 	}
