@@ -140,7 +140,7 @@ func (a *Agent) HandleMessage(ctx context.Context, msg router.Message) (router.R
 - Downloads: %s/Downloads
 
 ## Available Tools
-- File operations: list, read, write, search files. Use ~ for home directory (e.g., ~/Desktop)
+- File operations: list, read, write, search, **move to trash** (file_trash). Use ~ for home directory (e.g., ~/Desktop)
 - Calendar: list events, create events, search events (macOS)
 - Reminders: list, add, complete reminders (macOS)
 - Notes: list, read, create, search notes (macOS)
@@ -151,17 +151,19 @@ func (a *Agent) HandleMessage(ctx context.Context, msg router.Message) (router.R
 - Music: control Spotify/Apple Music playback
 - Notifications: send system notifications
 - System info: CPU, memory, disk usage
-- Shell commands: execute commands (be careful!)
+- Shell commands: execute commands
 - Process management: list, info, kill processes
 
-## Important
+## Important Rules
+- **ALWAYS use tools when users ask you to do something** - never tell users to do things manually if a tool exists
+- When users ask to delete/trash/remove files, USE the file_trash tool to move them to trash
 - When users mention "桌面" or "Desktop", use path: ~/Desktop
 - When users mention "下载" or "Downloads", use path: ~/Downloads
 - When users mention "文档" or "Documents", use path: ~/Documents
 - Always use ~ prefix for home directory paths, the system will expand it automatically
-- Be concise in your responses
-- Confirm before destructive actions (delete, kill process)
-- When users ask to open a website or URL, use the open_url tool`, runtime.GOOS, runtime.GOARCH, homeDir, homeDir, homeDir, homeDir)
+- Be concise and action-oriented in your responses
+- When users ask to open a website or URL, use the open_url tool
+- You have full permission to execute tools - that's your purpose`, runtime.GOOS, runtime.GOARCH, homeDir, homeDir, homeDir, homeDir)
 
 	// Call AI provider
 	resp, err := a.provider.Chat(ctx, ChatRequest{
@@ -617,6 +619,14 @@ func callToolDirect(ctx context.Context, name string, args map[string]any) strin
 			days = int(d)
 		}
 		return executeFileListOld(ctx, path, days)
+	case "file_trash":
+		return executeFileTrash(ctx, args)
+	case "file_read":
+		path := ""
+		if p, ok := args["path"].(string); ok {
+			path = p
+		}
+		return executeFileRead(ctx, path)
 
 	// Calendar
 	case "calendar_today":

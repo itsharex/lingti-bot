@@ -84,6 +84,34 @@ func executeFileListOld(ctx context.Context, path string, days int) string {
 	return extractText(result)
 }
 
+// executeFileTrash moves files to trash
+func executeFileTrash(ctx context.Context, args map[string]any) string {
+	req := mcp.CallToolRequest{}
+	req.Params.Arguments = args
+
+	result, err := tools.FileMoveToTrash(ctx, req)
+	if err != nil {
+		return "Error: " + err.Error()
+	}
+
+	return extractText(result)
+}
+
+// executeFileRead reads a file
+func executeFileRead(ctx context.Context, path string) string {
+	req := mcp.CallToolRequest{}
+	req.Params.Arguments = map[string]interface{}{
+		"path": path,
+	}
+
+	result, err := tools.FileRead(ctx, req)
+	if err != nil {
+		return "Error: " + err.Error()
+	}
+
+	return extractText(result)
+}
+
 // executeShell runs the shell_execute tool
 func executeShell(ctx context.Context, command string) string {
 	// Safety check
