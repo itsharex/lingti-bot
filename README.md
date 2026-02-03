@@ -4,10 +4,11 @@
 
 [![Go Version](https://img.shields.io/badge/Go-1.23+-00ADD8?style=flat&logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Website](https://img.shields.io/badge/官网-cli.lingti.com-blue?style=flat)](https://cli.lingti.com/bot)
 
 **灵缇**是一个极其易于集成的 MCP (Model Context Protocol) 服务器和多平台消息路由器，让 AI 助手能够访问你的本地计算机资源。
 
-> **为什么叫"灵缇"？** 灵缇犬（Greyhound）以其敏捷、忠诚著称。灵缇 bot 同样敏捷高效，是你忠实的 AI 助手。
+> **为什么叫"灵缇"？** 灵缇犬（Greyhound）是世界上跑得最快的犬，以敏捷、忠诚著称。灵缇 bot 同样敏捷高效，是你忠实的 AI 助手。
 
 ## 特性
 
@@ -623,6 +624,41 @@ MIT License
 ## 贡献
 
 欢迎提交 Issue 和 Pull Request！
+
+## Sponsors
+
+- **[灵缇游戏加速](https://game.lingti.com)** - PC/Mac/iOS/Android 全平台游戏加速、热点加速、AI 及学术资源定向加速，And More
+- **[灵缇路由](https://router.lingti.com)** - 您的路由管家、网游电竞专家
+
+## 开发环境
+
+本项目完全在 **[lingti-code](https://cli.lingti.com/code)** 环境中编写完成。
+
+### 关于 lingti-code
+
+[lingti-code](https://github.com/ruilisi/lingti-code) 是一个一体化的 AI 就绪开发环境平台，基于 **Tmux + Neovim + Zsh** 构建，支持 macOS、Ubuntu 和 Docker 部署。
+
+**核心组件：**
+
+- **Shell** - ZSH + Prezto 框架，100+ 常用别名和函数，fasd 智能导航
+- **Editor** - Neovim + SpaceVim 发行版，LSP 集成，GitHub Copilot 支持
+- **Terminal** - Tmux 终端复用，vim 风格键绑定，会话管理
+- **版本控制** - Git 最佳实践配置，丰富的 Git 别名
+- **开发工具** - asdf 版本管理器，ctags，IRB/Pry 增强
+
+**AI 集成：**
+
+- Claude Code CLI 配置，支持项目感知的 CLAUDE.md 文件
+- 自定义状态栏显示 Token 用量
+- 预配置 LSP 插件（Python basedpyright、Go gopls）
+
+**一键安装：**
+
+```bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/lingti/lingti-code/master/install.sh)"
+```
+
+更多信息请访问：[官网](https://cli.lingti.com/code) | [GitHub](https://github.com/ruilisi/lingti-code)
 
 ---
 
