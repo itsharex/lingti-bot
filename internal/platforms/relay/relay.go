@@ -253,6 +253,12 @@ func (p *Platform) connect() error {
 		return fmt.Errorf("authentication failed: %s", authResult.Error)
 	}
 
+	// Set up pong handler to reset read deadline
+	conn.SetPongHandler(func(string) error {
+		conn.SetReadDeadline(time.Now().Add(readTimeout))
+		return nil
+	})
+
 	p.connMu.Lock()
 	p.conn = conn
 	p.sessionID = authResult.SessionID
@@ -402,9 +408,9 @@ func (p *Platform) sendPing() {
 		return
 	}
 
-	ping := PingPong{Type: "ping"}
+	// Use WebSocket-level ping for better proxy/load balancer compatibility
 	conn.SetWriteDeadline(time.Now().Add(writeTimeout))
-	if err := conn.WriteJSON(ping); err != nil {
+	if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 		log.Printf("[Relay] Failed to send ping: %v", err)
 	}
 }
