@@ -366,6 +366,9 @@ func (a *Agent) HandleMessage(ctx context.Context, msg router.Message) (router.R
 		Message{Role: "assistant", Content: resp.Content},
 	)
 
+	// Log response at verbose level
+	logger.Verbose("[Agent] Response: %s", resp.Content)
+
 	return router.Response{Text: resp.Content}, nil
 }
 
@@ -837,7 +840,16 @@ func (a *Agent) executeTool(ctx context.Context, name string, input json.RawMess
 	}
 
 	// Call tools directly
-	return callToolDirect(ctx, name, args)
+	result := callToolDirect(ctx, name, args)
+
+	// Log result at verbose level (truncate if too long)
+	if len(result) > 500 {
+		logger.Verbose("[Agent] Tool %s result: %s... (truncated)", name, result[:500])
+	} else {
+		logger.Verbose("[Agent] Tool %s result: %s", name, result)
+	}
+
+	return result
 }
 
 // callToolDirect calls a tool directly
