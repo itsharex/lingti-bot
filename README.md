@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Website](https://img.shields.io/badge/官网-cli.lingti.com-blue?style=flat)](https://cli.lingti.com/bot)
 
-**灵小缇**是一个集 **MCP Server**、**多平台消息网关**、**丰富工具集**、**智能对话**于一体的 AI Bot 平台。各大平台秒接入，兼具 [OpenClaw](docs/openclaw-reference.md) 式灵活接入。
+**灵小缇** 是一个集 **MCP Server**、**多平台消息网关**、**丰富工具集**、**智能对话**于一体的 AI Bot 平台。微信、飞书等平台秒接入，兼具 [OpenClaw](docs/openclaw-reference.md) 式灵活接入。
 
 > **为什么叫"灵小缇"？** 灵缇犬（Greyhound）是世界上跑得最快的犬，以敏捷、忠诚著称。灵小缇同样敏捷高效，是你忠实的 AI 助手。
 
@@ -15,9 +15,37 @@
 | 模块 | 说明 | 特点 |
 |------|------|------|
 | **MCP Server** | 标准 MCP 协议服务器 | 兼容 Claude Desktop、Cursor 等所有 MCP 客户端 |
-| **多平台消息网关** | 企业消息平台集成 | Slack、飞书一键接入，支持云中继 |
+| **多平台消息网关** | 消息平台集成 | 个人微信、Slack、飞书一键接入，支持云中继 |
 | **MCP 工具集** | 40+ 本地系统工具 | 文件、Shell、系统、网络、日历、音乐等 |
 | **智能对话** | 多轮对话与记忆 | 上下文记忆、多 AI 后端（Claude/Kimi/DeepSeek） |
+
+## 一键安装
+
+```bash
+curl -fsSL https://cli.lingti.com/install.sh | bash -s -- --bot
+```
+
+## 微信一键接入
+
+- 微信搜索：`灵缇小秘`，关注并发送任意信息，即可获取安装方法及绑定所需的 `user-id`
+- 执行一键安装命令，并按示例配置模型连接后，即可绑定微信与本地 bot
+
+<img src="https://lingti-1302055788.cos.ap-guangzhou.myqcloud.com/lingti-bot-wechat.png" alt="微信二维码" width="50%">
+
+**示例**
+```bash
+curl -fsSL https://cli.lingti.com/install.sh | bash -s -- --bot
+
+lingti-bot relay \
+--user-id USER_ID_FROM_WECHAT \
+--platform wechat \
+--model MiniMax-M2.1 \
+--api-key YOUR_API_KEY \
+--base-url "https://api.minimaxi.com/anthropic/v1"
+```
+## 飞书接入
+
+- 飞书商店应用正在上架流程中，目前可通过自建应用实现绑定。教程请参考：[飞书集成指南](https://github.com/ruilisi/lingti-bot/blob/master/docs/feishu-integration.md)
 
 ## Sponsors
 
@@ -173,6 +201,7 @@ export FEISHU_APP_SECRET="..."
 | **Claude** (Anthropic) | `ANTHROPIC_API_KEY` |
 | **Kimi** (月之暗面) | `KIMI_API_KEY` |
 | **DeepSeek** | `DEEPSEEK_API_KEY` |
+| **MiniMax** | `ANTHROPIC_API_KEY`、`ANTHROPIC_BASE_URL` |
 
 ### 详细文档
 
