@@ -403,6 +403,17 @@ func (p *Platform) handleMessage(data []byte) {
 		return
 	}
 
+	// Log detailed message info for debugging
+	log.Printf("[Relay] Received message: id=%s, platform=%s, user_id=%s, channel_id=%s",
+		msg.ID, msg.Platform, msg.UserID, msg.ChannelID)
+	if msg.Metadata != nil {
+		if corpID := msg.Metadata["corp_id"]; corpID != "" {
+			log.Printf("[Relay] Message metadata: corp_id=%s, agent_id=%s, chat_type=%s",
+				corpID, msg.Metadata["agent_id"], msg.Metadata["chat_type"])
+		}
+	}
+	log.Printf("[Relay] Message content from %s: %s", msg.Username, msg.Text)
+
 	if p.messageHandler != nil {
 		metadata := msg.Metadata
 		if metadata == nil {
