@@ -3,13 +3,13 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/pltanton/lingti-bot/internal/agent"
 	"github.com/pltanton/lingti-bot/internal/gateway"
+	"github.com/pltanton/lingti-bot/internal/logger"
 	"github.com/pltanton/lingti-bot/internal/router"
 	"github.com/spf13/cobra"
 )
@@ -152,21 +152,21 @@ func runGateway(cmd *cobra.Command, args []string) {
 
 	go func() {
 		if err := gw.Start(ctx); err != nil {
-			log.Printf("Gateway error: %v", err)
+			logger.Info("Gateway error: %v", err)
 		}
 	}()
 
-	log.Printf("Gateway started on %s", gatewayAddr)
+	logger.Info("Gateway started on %s", gatewayAddr)
 	if gatewayAuthToken != "" {
-		log.Println("Authentication enabled")
+		logger.Info("Authentication enabled")
 	}
-	log.Println("Press Ctrl+C to stop.")
+	logger.Info("Press Ctrl+C to stop.")
 
 	// Wait for shutdown signal
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 	<-sigCh
 
-	log.Println("Shutting down...")
+	logger.Info("Shutting down...")
 	gw.Stop()
 }

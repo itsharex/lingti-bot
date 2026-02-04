@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/pltanton/lingti-bot/internal/logger"
 )
 
 // MessageType defines the type of gateway message
@@ -164,7 +164,7 @@ func (g *Gateway) Start(ctx context.Context) error {
 		server.Shutdown(context.Background())
 	}()
 
-	log.Printf("[Gateway] Starting on %s", g.addr)
+	logger.Info("[Gateway] Starting on %s", g.addr)
 	return server.ListenAndServe()
 }
 
@@ -186,7 +186,7 @@ func (g *Gateway) run() {
 			g.mu.Lock()
 			g.clients[client.ID] = client
 			g.mu.Unlock()
-			log.Printf("[Gateway] Client connected: %s", client.ID)
+			logger.Info("[Gateway] Client connected: %s", client.ID)
 			g.emitEvent("client_connected", map[string]string{"client_id": client.ID})
 
 		case client := <-g.unregister:
@@ -196,7 +196,7 @@ func (g *Gateway) run() {
 				close(client.send)
 			}
 			g.mu.Unlock()
-			log.Printf("[Gateway] Client disconnected: %s", client.ID)
+			logger.Info("[Gateway] Client disconnected: %s", client.ID)
 			g.emitEvent("client_disconnected", map[string]string{"client_id": client.ID})
 
 		case message := <-g.broadcast:
@@ -218,7 +218,7 @@ func (g *Gateway) run() {
 func (g *Gateway) handleWebSocket(w http.ResponseWriter, r *http.Request) {
 	conn, err := g.upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Printf("[Gateway] Upgrade error: %v", err)
+		logger.Error("[Gateway] Upgrade error: %v", err)
 		return
 	}
 
@@ -331,6 +331,7 @@ func (c *Client) readPump() {
 	c.conn.SetReadLimit(65536)
 	c.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 	c.conn.SetPongHandler(func(string) error {
+		logger.Debug("[Gateway] Received pong from client %s", c.ID)
 		c.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 		return nil
 	})
@@ -339,7 +340,7 @@ func (c *Client) readPump() {
 		_, data, err := c.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("[Gateway] Read error: %v", err)
+				logger.Debug("[Gateway] Read error: %v", err)
 			}
 			break
 		}
@@ -389,6 +390,7 @@ func (c *Client) writePump() {
 			}
 
 		case <-ticker.C:
+			logger.Debug("[Gateway] Sending ping to client %s", c.ID)
 			c.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
 			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
 				return
@@ -543,7 +545,7 @@ func (c *Client) sendMessage(msg Message) {
 	select {
 	case c.send <- data:
 	default:
-		log.Printf("[Gateway] Send buffer full for client %s", c.ID)
+		logger.Debug("[Gateway] Send buffer full for client %s", c.ID)
 	}
 }
 

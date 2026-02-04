@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"strings"
@@ -12,6 +11,7 @@ import (
 	"time"
 
 	"github.com/pltanton/lingti-bot/internal/agent"
+	"github.com/pltanton/lingti-bot/internal/logger"
 	"github.com/pltanton/lingti-bot/internal/router"
 	"github.com/pltanton/lingti-bot/internal/voice"
 	"github.com/spf13/cobra"
@@ -151,7 +151,7 @@ func runVoice(cmd *cobra.Command, args []string) {
 			Voice:    voiceName,
 		})
 		if err != nil {
-			log.Printf("Warning: Failed to create speaker: %v (responses will be text only)", err)
+			logger.Verbose("Warning: Failed to create speaker: %v (responses will be text only)", err)
 			speakResponse = false
 		}
 	}
@@ -266,7 +266,7 @@ func runVoice(cmd *cobra.Command, args []string) {
 		if speakResponse && speaker != nil {
 			fmt.Println("🔊 Speaking...")
 			if err := speaker.Speak(ctx, response.Text); err != nil {
-				log.Printf("Warning: TTS failed: %v", err)
+				logger.Verbose("Warning: TTS failed: %v", err)
 			}
 		}
 	}

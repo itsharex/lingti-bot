@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"runtime"
 	"strings"
 	"time"
 
+	"github.com/pltanton/lingti-bot/internal/logger"
 	"github.com/pltanton/lingti-bot/internal/router"
 )
 
@@ -210,7 +210,7 @@ func (a *Agent) handleBuiltinCommand(msg router.Message) (router.Response, bool)
 
 // HandleMessage processes a message and returns a response
 func (a *Agent) HandleMessage(ctx context.Context, msg router.Message) (router.Response, error) {
-	log.Printf("[Agent] Processing message from %s: %s (provider: %s)", msg.Username, msg.Text, a.provider.Name())
+	logger.Info("[Agent] Processing message from %s: %s (provider: %s)", msg.Username, msg.Text, a.provider.Name())
 
 	// Handle built-in commands
 	if resp, handled := a.handleBuiltinCommand(msg); handled {
@@ -225,7 +225,7 @@ func (a *Agent) HandleMessage(ctx context.Context, msg router.Message) (router.R
 
 	// Get conversation history
 	history := a.memory.GetHistory(convKey)
-	log.Printf("[Agent] Conversation key: %s, history messages: %d", convKey, len(history))
+	logger.Debug("[Agent] Conversation key: %s, history messages: %d", convKey, len(history))
 
 	// Create messages with history
 	messages := make([]Message, 0, len(history)+1)
@@ -828,7 +828,7 @@ func (a *Agent) processToolCalls(ctx context.Context, toolCalls []ToolCall) []To
 
 // executeTool runs a tool and returns the result
 func (a *Agent) executeTool(ctx context.Context, name string, input json.RawMessage) string {
-	log.Printf("[Agent] Executing tool: %s", name)
+	logger.Info("[Agent] Executing tool: %s", name)
 
 	// Parse input arguments
 	var args map[string]any

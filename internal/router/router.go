@@ -2,8 +2,9 @@ package router
 
 import (
 	"context"
-	"log"
 	"sync"
+
+	"github.com/pltanton/lingti-bot/internal/logger"
 )
 
 // Message represents an incoming message from any platform
@@ -67,19 +68,19 @@ func (r *Router) Register(platform Platform) {
 		go r.handleMessage(msg)
 	})
 
-	log.Printf("[Router] Registered platform: %s", name)
+	logger.Info("[Router] Registered platform: %s", name)
 }
 
 // handleMessage processes an incoming message
 func (r *Router) handleMessage(msg Message) {
 	ctx := context.Background()
 
-	log.Printf("[Router] Message from %s/%s: %s", msg.Platform, msg.Username, msg.Text)
+	logger.Info("[Router] Message from %s/%s: %s", msg.Platform, msg.Username, msg.Text)
 
 	// Call the message handler
 	resp, err := r.handler(ctx, msg)
 	if err != nil {
-		log.Printf("[Router] Error handling message: %v", err)
+		logger.Error("[Router] Error handling message: %v", err)
 		resp = Response{Text: "Sorry, I encountered an error processing your request."}
 	}
 
@@ -93,7 +94,7 @@ func (r *Router) handleMessage(msg Message) {
 			resp.ThreadID = msg.ThreadID
 		}
 		if err := platform.Send(ctx, msg.ChannelID, resp); err != nil {
-			log.Printf("[Router] Error sending response: %v", err)
+			logger.Error("[Router] Error sending response: %v", err)
 		}
 	}
 }
@@ -106,13 +107,13 @@ func (r *Router) Start(ctx context.Context) error {
 	defer r.mu.RUnlock()
 
 	for name, platform := range r.platforms {
-		log.Printf("[Router] Starting platform: %s", name)
+		logger.Info("[Router] Starting platform: %s", name)
 		if err := platform.Start(r.ctx); err != nil {
 			return err
 		}
 	}
 
-	log.Printf("[Router] All platforms started")
+	logger.Info("[Router] All platforms started")
 	return nil
 }
 
@@ -126,9 +127,9 @@ func (r *Router) Stop() error {
 	defer r.mu.RUnlock()
 
 	for name, platform := range r.platforms {
-		log.Printf("[Router] Stopping platform: %s", name)
+		logger.Info("[Router] Stopping platform: %s", name)
 		if err := platform.Stop(); err != nil {
-			log.Printf("[Router] Error stopping %s: %v", name, err)
+			logger.Error("[Router] Error stopping %s: %v", name, err)
 		}
 	}
 

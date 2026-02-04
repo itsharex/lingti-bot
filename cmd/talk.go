@@ -3,12 +3,12 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/pltanton/lingti-bot/internal/agent"
+	"github.com/pltanton/lingti-bot/internal/logger"
 	"github.com/pltanton/lingti-bot/internal/router"
 	"github.com/pltanton/lingti-bot/internal/voice"
 	"github.com/spf13/cobra"
@@ -159,20 +159,20 @@ func runTalk(cmd *cobra.Command, args []string) {
 		os.Exit(1)
 	}
 
-	log.Printf("Talk mode started (provider: %s)", voiceProvider)
+	logger.Info("Talk mode started (provider: %s)", voiceProvider)
 	if wakeWord != "" {
-		log.Printf("Wake word: %s", wakeWord)
+		logger.Info("Wake word: %s", wakeWord)
 	}
 	if continuousMode {
-		log.Println("Continuous mode enabled")
+		logger.Info("Continuous mode enabled")
 	}
-	log.Println("Press Ctrl+C to stop.")
+	logger.Info("Press Ctrl+C to stop.")
 
 	// Wait for shutdown signal
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 	<-sigCh
 
-	log.Println("Shutting down...")
+	logger.Info("Shutting down...")
 	talkMode.Stop()
 }

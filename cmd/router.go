@@ -3,12 +3,12 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/pltanton/lingti-bot/internal/agent"
+	"github.com/pltanton/lingti-bot/internal/logger"
 	"github.com/pltanton/lingti-bot/internal/platforms/discord"
 	"github.com/pltanton/lingti-bot/internal/platforms/feishu"
 	"github.com/pltanton/lingti-bot/internal/platforms/slack"
@@ -159,7 +159,7 @@ func runRouter(cmd *cobra.Command, args []string) {
 		}
 		r.Register(slackPlatform)
 	} else {
-		log.Println("Slack tokens not provided, skipping Slack integration")
+		logger.Info("Slack tokens not provided, skipping Slack integration")
 	}
 
 	// Register Feishu if tokens are provided
@@ -174,7 +174,7 @@ func runRouter(cmd *cobra.Command, args []string) {
 		}
 		r.Register(feishuPlatform)
 	} else {
-		log.Println("Feishu tokens not provided, skipping Feishu integration")
+		logger.Info("Feishu tokens not provided, skipping Feishu integration")
 	}
 
 	// Register Telegram if token is provided
@@ -188,9 +188,9 @@ func runRouter(cmd *cobra.Command, args []string) {
 				APIKey:   voiceSTTAPIKey,
 			})
 			if err != nil {
-				log.Printf("Warning: Failed to create voice transcriber: %v", err)
+				logger.Info("Warning: Failed to create voice transcriber: %v", err)
 			} else {
-				log.Printf("Voice transcription enabled (provider: %s)", voiceSTTProvider)
+				logger.Info("Voice transcription enabled (provider: %s)", voiceSTTProvider)
 			}
 		}
 
@@ -204,7 +204,7 @@ func runRouter(cmd *cobra.Command, args []string) {
 		}
 		r.Register(telegramPlatform)
 	} else {
-		log.Println("Telegram token not provided, skipping Telegram integration")
+		logger.Info("Telegram token not provided, skipping Telegram integration")
 	}
 
 	// Register Discord if token is provided
@@ -218,7 +218,7 @@ func runRouter(cmd *cobra.Command, args []string) {
 		}
 		r.Register(discordPlatform)
 	} else {
-		log.Println("Discord token not provided, skipping Discord integration")
+		logger.Info("Discord token not provided, skipping Discord integration")
 	}
 
 	// Start the router
@@ -245,14 +245,14 @@ func runRouter(cmd *cobra.Command, args []string) {
 			modelName = "claude-sonnet-4-20250514"
 		}
 	}
-	log.Printf("Router started. AI Provider: %s, Model: %s", providerName, modelName)
-	log.Println("Press Ctrl+C to stop.")
+	logger.Info("Router started. AI Provider: %s, Model: %s", providerName, modelName)
+	logger.Info("Press Ctrl+C to stop.")
 
 	// Wait for shutdown signal
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 	<-sigCh
 
-	log.Println("Shutting down...")
+	logger.Info("Shutting down...")
 	r.Stop()
 }

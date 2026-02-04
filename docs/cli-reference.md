@@ -23,10 +23,33 @@ Complete command line reference for lingti-bot.
 
 These options are available for all commands:
 
-| Flag | Description |
-|------|-------------|
-| `-h, --help` | Show help for any command |
-| `--version` | Show version information |
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-h, --help` | | Show help for any command |
+| `--version` | | Show version information |
+| `--log` | `info` | Log level: silent, info, verbose, very-verbose |
+
+### Log Levels
+
+| Level | Description |
+|-------|-------------|
+| `silent` | Minimal output, errors only |
+| `info` | Default level, shows command execution |
+| `verbose` | Shows more details including command results |
+| `very-verbose` | Debug mode with all details (websocket ping/pong, etc.) |
+
+**Examples:**
+
+```bash
+# Silent mode - minimal output
+lingti-bot router --log silent
+
+# Verbose mode - show command results
+lingti-bot talk --log verbose
+
+# Debug mode - show all details
+lingti-bot gateway --log very-verbose
+```
 
 ---
 

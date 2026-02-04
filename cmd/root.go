@@ -4,8 +4,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/pltanton/lingti-bot/internal/logger"
 	"github.com/spf13/cobra"
 )
+
+var logLevel string
 
 var rootCmd = &cobra.Command{
 	Use:   "lingti-bot",
@@ -19,6 +22,20 @@ It provides tools for:
   - System information (CPU, memory, disk)
   - Process management
   - Network information`,
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		// Parse and set log level
+		level, err := logger.ParseLevel(logLevel)
+		if err != nil {
+			return err
+		}
+		logger.SetLevel(level)
+		return nil
+	},
+}
+
+func init() {
+	rootCmd.PersistentFlags().StringVar(&logLevel, "log", "info",
+		"Log level: silent, info, verbose, very-verbose")
 }
 
 func Execute() {

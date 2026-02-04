@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"os/exec"
@@ -15,6 +14,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/pltanton/lingti-bot/internal/logger"
 )
 
 // Provider defines a speech provider interface
@@ -98,7 +99,7 @@ func (t *TalkMode) Start(ctx context.Context) error {
 	t.listening = true
 	t.mu.Unlock()
 
-	log.Printf("[Voice] Talk mode started with provider: %s", t.provider.Name())
+	logger.Info("[Voice] Talk mode started with provider: %s", t.provider.Name())
 
 	// Start listening loop
 	go t.listenLoop()
@@ -164,7 +165,7 @@ func (t *TalkMode) ProcessAudio(ctx context.Context, audio []byte) (string, erro
 		return "", nil
 	}
 
-	log.Printf("[Voice] Recognized: %s", text)
+	logger.Info("[Voice] Recognized: %s", text)
 
 	// Check for wake word if configured
 	if t.wakeWord != "" && !strings.Contains(strings.ToLower(text), strings.ToLower(t.wakeWord)) {
@@ -191,12 +192,12 @@ func (t *TalkMode) ProcessAudio(ctx context.Context, audio []byte) (string, erro
 	if t.briefVoice {
 		// Only speak brief notification
 		if err := t.Speak(ctx, "已完成"); err != nil {
-			log.Printf("[Voice] TTS failed: %v", err)
+			logger.Info("[Voice] TTS failed: %v", err)
 		}
 	} else {
 		// Speak full response
 		if err := t.Speak(ctx, response); err != nil {
-			log.Printf("[Voice] TTS failed: %v", err)
+			logger.Info("[Voice] TTS failed: %v", err)
 		}
 	}
 
@@ -218,14 +219,14 @@ func (t *TalkMode) listenLoop() {
 			// Record audio (platform-specific)
 			audio, err := recordAudio(t.ctx, 5*time.Second)
 			if err != nil {
-				log.Printf("[Voice] Recording failed: %v", err)
+				logger.Info("[Voice] Recording failed: %v", err)
 				continue
 			}
 
 			if len(audio) > 0 {
 				_, err := t.ProcessAudio(t.ctx, audio)
 				if err != nil {
-					log.Printf("[Voice] Processing failed: %v", err)
+					logger.Info("[Voice] Processing failed: %v", err)
 				}
 
 				// If not in continuous mode, stop after one interaction
