@@ -1,4 +1,4 @@
-# lingti-bot (灵小缇)
+# l ingti-bot (灵小缇)
 
 > 🚀 **[更适合中国宝宝体质](docs/为何更适合中国宝宝体质.md)的 AI Bot，让 AI Bot 接入更简单**
 
@@ -25,22 +25,10 @@
 curl -fsSL https://cli.lingti.com/install.sh | bash -s -- --bot
 ```
 
-### 微信一键接入
+### 微信公众号一键接入
 
-- 微信搜索：`灵缇小秘`，关注并发送任意信息，即可获取安装方法及绑定所需的 `user-id`
-- 执行一键安装命令，并按示例配置模型连接后，即可绑定微信与本地 bot
-
-<img src="https://lingti-1302055788.cos.ap-guangzhou.myqcloud.com/lingti-bot-wechat.png" alt="微信二维码" width="50%">
-
-**示例**
-```bash
-lingti-bot relay \
---user-id USER_ID_FROM_WECHAT \
---platform wechat \
---model MiniMax-M2.1 \
---api-key YOUR_API_KEY \
---base-url "https://api.minimaxi.com/anthropic/v1"
-```
+微信搜索公众号「**灵缇小秘**」，关注后发送任意消息获取接入教程，10秒将lingti-bot接入微信。
+详细教程请参考：[微信公众号接入指南](docs/wechat-integration.md)
 ### 飞书接入
 
 - 飞书商店应用正在上架流程中，目前可通过自建应用实现绑定。教程请参考：[飞书集成指南](https://github.com/ruilisi/lingti-bot/blob/master/docs/feishu-integration.md)
