@@ -19,6 +19,49 @@
 | **MCP 工具集** | 40+ 本地系统工具 | 文件、Shell、系统、网络、日历、音乐等 |
 | **智能对话** | 多轮对话与记忆 | 上下文记忆、多 AI 后端（Claude/Kimi/DeepSeek） |
 
+## 云中继：零门槛接入企业消息平台
+
+> **告别公网服务器、告别复杂配置，让 AI Bot 接入像配置 Wi-Fi 一样简单**
+
+传统接入企业微信等平台需要：公网服务器 → 域名备案 → HTTPS 证书 → 防火墙配置 → 回调服务开发...
+
+**lingti-bot 云中继** 将这一切简化为 3 条命令：
+
+```bash
+# 步骤 1: 安装
+curl -fsSL https://cli.lingti.com/install.sh | bash -s -- --bot
+
+# 步骤 2: 验证回调 URL（运行后去平台后台配置 https://bot.lingti.com/wecom）
+lingti-bot verify --platform wecom --wecom-corp-id ... --wecom-token ...
+
+# 步骤 3: 开始处理消息
+lingti-bot relay --platform wecom --provider deepseek --api-key sk-xxx ...
+```
+
+**工作原理：**
+
+```
+┌──────────────┐     ┌─────────────────────────────┐     ┌──────────────────┐
+│  企业微信     │     │    云中继服务器              │     │   你的电脑        │
+│  用户消息     │ ──▶ │  bot.lingti.com             │ ──▶ │  lingti-bot      │
+│              │     │  (验证回调、转发消息)         │ WS  │  (本地AI处理)     │
+└──────────────┘     └─────────────────────────────┘     └──────────────────┘
+```
+
+**优势对比：**
+
+| | 传统方案 | 云中继方案 |
+|---|---|---|
+| 公网服务器 | ✅ 需要 | ❌ 不需要 |
+| 域名/备案 | ✅ 需要 | ❌ 不需要 |
+| HTTPS证书 | ✅ 需要 | ❌ 不需要 |
+| 回调服务开发 | ✅ 需要 | ❌ 不需要 |
+| 接入时间 | 数天 | **5分钟** |
+| AI处理位置 | 服务器 | **本地** |
+| 数据安全 | 云端存储 | **本地处理** |
+
+> 详细对比请参考：[lingti-bot vs OpenClaw：简化 AI 集成的努力](docs/vs-openclaw-integration.md)
+
 ## 一键安装
 
 ```bash
@@ -35,7 +78,26 @@ curl -fsSL https://cli.lingti.com/install.sh | bash -s -- --bot
 
 ### 企业微信接入
 
-- 通过自建应用接入企业微信，需要公网服务器接收回调。教程请参考：[企业微信集成指南](docs/wecom-integration.md)
+通过**云中继模式**，无需公网服务器即可接入企业微信：
+
+```bash
+# 1. 先运行 verify 命令完成回调验证
+lingti-bot verify --platform wecom \
+  --wecom-corp-id YOUR_CORP_ID \
+  --wecom-agent-id YOUR_AGENT_ID \
+  --wecom-secret YOUR_SECRET \
+  --wecom-token YOUR_TOKEN \
+  --wecom-aes-key YOUR_AES_KEY
+
+# 2. 去企业微信后台配置回调 URL: https://bot.lingti.com/wecom
+
+# 3. 验证成功后，运行 relay 处理消息
+lingti-bot relay --user-id YOUR_ID --platform wecom \
+  --provider deepseek --api-key YOUR_API_KEY \
+  --wecom-corp-id ... --wecom-token ... --wecom-aes-key ...
+```
+
+详细教程请参考：[企业微信集成指南](docs/wecom-integration.md)
 
 ## Sponsors
 

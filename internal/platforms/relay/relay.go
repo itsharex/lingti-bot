@@ -36,6 +36,12 @@ type Config struct {
 	WebhookURL string // Webhook URL (default: https://bot.lingti.com/webhook)
 	AIProvider string // AI provider name (e.g., "claude", "deepseek")
 	AIModel    string // AI model name
+	// WeCom credentials for cloud relay (when platform=wecom)
+	WeComCorpID  string
+	WeComAgentID string
+	WeComSecret  string
+	WeComToken   string
+	WeComAESKey  string
 }
 
 // Platform implements router.Platform for cloud relay
@@ -61,6 +67,12 @@ type AuthMessage struct {
 	ClientVersion string `json:"client_version"`
 	AIProvider    string `json:"ai_provider,omitempty"`
 	AIModel       string `json:"ai_model,omitempty"`
+	// WeCom credentials (for wecom platform)
+	WeComCorpID  string `json:"wecom_corp_id,omitempty"`
+	WeComAgentID string `json:"wecom_agent_id,omitempty"`
+	WeComSecret  string `json:"wecom_secret,omitempty"`
+	WeComToken   string `json:"wecom_token,omitempty"`
+	WeComAESKey  string `json:"wecom_aes_key,omitempty"`
 }
 
 // AuthResult is the response to authentication
@@ -106,8 +118,8 @@ func New(cfg Config) (*Platform, error) {
 	if cfg.Platform == "" {
 		return nil, fmt.Errorf("platform is required")
 	}
-	if cfg.Platform != "feishu" && cfg.Platform != "slack" && cfg.Platform != "wechat" {
-		return nil, fmt.Errorf("platform must be 'feishu', 'slack', or 'wechat'")
+	if cfg.Platform != "feishu" && cfg.Platform != "slack" && cfg.Platform != "wechat" && cfg.Platform != "wecom" {
+		return nil, fmt.Errorf("platform must be 'feishu', 'slack', 'wechat', or 'wecom'")
 	}
 
 	if cfg.ServerURL == "" {
@@ -232,6 +244,11 @@ func (p *Platform) connect() error {
 		ClientVersion: ClientVersion,
 		AIProvider:    p.config.AIProvider,
 		AIModel:       p.config.AIModel,
+		WeComCorpID:   p.config.WeComCorpID,
+		WeComAgentID:  p.config.WeComAgentID,
+		WeComSecret:   p.config.WeComSecret,
+		WeComToken:    p.config.WeComToken,
+		WeComAESKey:   p.config.WeComAESKey,
 	}
 
 	debug.Log("Sending auth message")

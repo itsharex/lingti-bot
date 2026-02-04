@@ -23,6 +23,12 @@ var (
 	relayAPIKey     string
 	relayBaseURL    string
 	relayModel      string
+	// WeCom credentials for cloud relay
+	relayWeComCorpID  string
+	relayWeComAgentID string
+	relayWeComSecret  string
+	relayWeComToken   string
+	relayWeComAESKey  string
 )
 
 var relayCmd = &cobra.Command{
@@ -41,10 +47,33 @@ User Flow:
   4. Messages are processed locally with your AI API key
   5. Responses are sent back through the relay service
 
+WeCom Cloud Relay:
+  For WeCom, you can use cloud relay mode without setting up your own server.
+  Configure callback URL in WeCom: https://bot.lingti.com/wecom
+  Then run relay with your WeCom credentials:
+
+  lingti-bot relay \
+    --user-id YOUR_USER_ID \
+    --platform wecom \
+    --wecom-corp-id YOUR_CORP_ID \
+    --wecom-agent-id YOUR_AGENT_ID \
+    --wecom-secret YOUR_SECRET \
+    --wecom-token YOUR_TOKEN \
+    --wecom-aes-key YOUR_AES_KEY \
+    --provider deepseek \
+    --api-key YOUR_API_KEY
+
 Required:
   --user-id     Your user ID from /whoami
   --platform    Platform type: feishu, slack, wechat, or wecom
   --api-key     AI API key (or AI_API_KEY env)
+
+WeCom Required (when platform=wecom):
+  --wecom-corp-id    WeCom Corp ID (or WECOM_CORP_ID env)
+  --wecom-agent-id   WeCom Agent ID (or WECOM_AGENT_ID env)
+  --wecom-secret     WeCom Secret (or WECOM_SECRET env)
+  --wecom-token      WeCom Callback Token (or WECOM_TOKEN env)
+  --wecom-aes-key    WeCom Encoding AES Key (or WECOM_AES_KEY env)
 
 Environment variables:
   RELAY_USER_ID        Alternative to --user-id
@@ -69,6 +98,13 @@ func init() {
 	relayCmd.Flags().StringVar(&relayAPIKey, "api-key", "", "AI API key (or AI_API_KEY env)")
 	relayCmd.Flags().StringVar(&relayBaseURL, "base-url", "", "Custom API base URL (or AI_BASE_URL env)")
 	relayCmd.Flags().StringVar(&relayModel, "model", "", "Model name (or AI_MODEL env)")
+
+	// WeCom credentials for cloud relay
+	relayCmd.Flags().StringVar(&relayWeComCorpID, "wecom-corp-id", "", "WeCom Corp ID (or WECOM_CORP_ID env)")
+	relayCmd.Flags().StringVar(&relayWeComAgentID, "wecom-agent-id", "", "WeCom Agent ID (or WECOM_AGENT_ID env)")
+	relayCmd.Flags().StringVar(&relayWeComSecret, "wecom-secret", "", "WeCom Secret (or WECOM_SECRET env)")
+	relayCmd.Flags().StringVar(&relayWeComToken, "wecom-token", "", "WeCom Callback Token (or WECOM_TOKEN env)")
+	relayCmd.Flags().StringVar(&relayWeComAESKey, "wecom-aes-key", "", "WeCom Encoding AES Key (or WECOM_AES_KEY env)")
 }
 
 func runRelay(cmd *cobra.Command, args []string) {
@@ -108,6 +144,23 @@ func runRelay(cmd *cobra.Command, args []string) {
 		}
 	}
 
+	// Get WeCom credentials from flags or environment
+	if relayWeComCorpID == "" {
+		relayWeComCorpID = os.Getenv("WECOM_CORP_ID")
+	}
+	if relayWeComAgentID == "" {
+		relayWeComAgentID = os.Getenv("WECOM_AGENT_ID")
+	}
+	if relayWeComSecret == "" {
+		relayWeComSecret = os.Getenv("WECOM_SECRET")
+	}
+	if relayWeComToken == "" {
+		relayWeComToken = os.Getenv("WECOM_TOKEN")
+	}
+	if relayWeComAESKey == "" {
+		relayWeComAESKey = os.Getenv("WECOM_AES_KEY")
+	}
+
 	// Validate required parameters
 	if relayUserID == "" {
 		fmt.Fprintln(os.Stderr, "Error: --user-id is required (get it from /whoami)")
@@ -124,6 +177,31 @@ func runRelay(cmd *cobra.Command, args []string) {
 	if relayAPIKey == "" {
 		fmt.Fprintln(os.Stderr, "Error: AI API key is required (--api-key or AI_API_KEY env)")
 		os.Exit(1)
+	}
+
+	// Validate WeCom credentials when platform is wecom
+	if relayPlatform == "wecom" {
+		missing := []string{}
+		if relayWeComCorpID == "" {
+			missing = append(missing, "--wecom-corp-id")
+		}
+		if relayWeComAgentID == "" {
+			missing = append(missing, "--wecom-agent-id")
+		}
+		if relayWeComSecret == "" {
+			missing = append(missing, "--wecom-secret")
+		}
+		if relayWeComToken == "" {
+			missing = append(missing, "--wecom-token")
+		}
+		if relayWeComAESKey == "" {
+			missing = append(missing, "--wecom-aes-key")
+		}
+		if len(missing) > 0 {
+			fmt.Fprintf(os.Stderr, "Error: WeCom credentials required for cloud relay: %v\n", missing)
+			fmt.Fprintln(os.Stderr, "Configure callback URL in WeCom: https://bot.lingti.com/wecom")
+			os.Exit(1)
+		}
 	}
 
 	// Create the AI agent
@@ -160,12 +238,17 @@ func runRelay(cmd *cobra.Command, args []string) {
 
 	// Create and register relay platform
 	relayPlatformInstance, err := relay.New(relay.Config{
-		UserID:     relayUserID,
-		Platform:   relayPlatform,
-		ServerURL:  relayServerURL,
-		WebhookURL: relayWebhookURL,
-		AIProvider: providerName,
-		AIModel:    modelName,
+		UserID:       relayUserID,
+		Platform:     relayPlatform,
+		ServerURL:    relayServerURL,
+		WebhookURL:   relayWebhookURL,
+		AIProvider:   providerName,
+		AIModel:      modelName,
+		WeComCorpID:  relayWeComCorpID,
+		WeComAgentID: relayWeComAgentID,
+		WeComSecret:  relayWeComSecret,
+		WeComToken:   relayWeComToken,
+		WeComAESKey:  relayWeComAESKey,
 	})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error creating relay platform: %v\n", err)

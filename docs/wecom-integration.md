@@ -2,10 +2,52 @@
 
 本指南介绍如何将 lingti-bot 接入企业微信（WeCom/WeChat Work）。
 
+## TL;DR - 5 分钟快速接入（云中继模式）
+
+```bash
+# 1. 安装 lingti-bot
+curl -fsSL https://cli.lingti.com/install.sh | bash -s -- --bot
+
+# 2. 在企业微信后台创建自建应用，获取以下信息：
+#    - 企业ID (CorpID): 我的企业 → 企业信息 → 企业ID
+#    - AgentId: 应用管理 → 自建 → 创建应用 → AgentId
+#    - Secret: 应用详情 → Secret
+#    - Token & EncodingAESKey: 应用详情 → 接收消息 → 设置API接收
+
+# 3. 启动验证模式（让云端准备接收企业微信的验证请求）
+lingti-bot verify \
+  --platform wecom \
+  --wecom-corp-id ww1234567890abcdef \
+  --wecom-agent-id 1000002 \
+  --wecom-secret "your-app-secret" \
+  --wecom-token "your-callback-token" \
+  --wecom-aes-key "your-43-char-encoding-aes-key"
+
+# 4. 在企业微信后台「接收消息」中配置回调 URL：
+#    https://bot.lingti.com/wecom
+#    点击保存，验证会自动完成
+
+# 5. 验证成功后按 Ctrl+C，然后启动消息处理
+lingti-bot relay \
+  --user-id my-wecom-bot \
+  --platform wecom \
+  --wecom-corp-id ww1234567890abcdef \
+  --wecom-agent-id 1000002 \
+  --wecom-secret "your-app-secret" \
+  --wecom-token "your-callback-token" \
+  --wecom-aes-key "your-43-char-encoding-aes-key" \
+  --provider deepseek \
+  --api-key "sk-your-deepseek-api-key"
+
+# 完成！现在可以在企业微信中与 AI 对话了
+```
+
+---
+
 ## 前置条件
 
 1. 企业微信管理员账号
-2. 公网可访问的服务器（用于接收回调）
+2. 公网可访问的服务器（用于接收回调）**或** 使用云中继模式（无需公网服务器）
 
 ## 第一步：创建企业微信应用
 
@@ -54,28 +96,110 @@ http://203.0.113.100:8080/wecom/callback
 
 ## 第二步：部署 lingti-bot
 
-### 方式一：云中继模式（无需公网服务器）
+### 方式一：云中继模式（推荐，一键接入，无需公网服务器）
 
-使用官方云中继服务，无需准备公网服务器：
+使用官方云中继服务，无需准备公网服务器。只需 4 步即可完成接入：
 
-1. 在企业微信后台配置回调 URL：`https://bot.lingti.com/wecom`
-2. 本地运行 lingti-bot relay 连接云中继
+**一键接入流程：**
+
+1. **创建应用**：在企业微信后台创建自建应用（参考第一步）
+2. **启动验证模式**：运行 `lingti-bot verify` 命令发送凭据到云端
+3. **配置回调 URL**：在「接收消息」设置中填写 `https://bot.lingti.com/wecom` 并保存
+4. **启动客户端**：验证成功后，运行 `lingti-bot relay` 命令开始处理消息
+
+**步骤 2：验证回调 URL**
+
+这是关键步骤！企业微信在保存回调配置时会发送验证请求，`verify` 命令确保云端已准备好响应。
+
+```bash
+# 先运行 verify 命令，让云端准备好验证
+lingti-bot verify \
+  --platform wecom \
+  --wecom-corp-id YOUR_CORP_ID \
+  --wecom-agent-id YOUR_AGENT_ID \
+  --wecom-secret YOUR_SECRET \
+  --wecom-token YOUR_TOKEN \
+  --wecom-aes-key YOUR_AES_KEY
+```
+
+运行后会显示如下界面：
+
+```
+╔════════════════════════════════════════════════════════════════╗
+║              Callback URL Verification Mode                    ║
+╠════════════════════════════════════════════════════════════════╣
+║  Platform: wecom                                               ║
+║  Corp ID:  ww1234567890abcdef                                  ║
+╠════════════════════════════════════════════════════════════════╣
+║  Your credentials have been sent to the cloud relay server.   ║
+║                                                                ║
+║  Now go to your platform's admin console and configure the    ║
+║  callback URL:                                                 ║
+║    https://bot.lingti.com/wecom                               ║
+║                                                                ║
+║  When you save the configuration, the platform will send a    ║
+║  verification request which will be handled automatically.    ║
+║                                                                ║
+║  Press Ctrl+C to exit after verification succeeds.            ║
+╚════════════════════════════════════════════════════════════════╝
+```
+
+**此时去企业微信后台：**
+1. 进入应用详情 → 接收消息 → 设置API接收
+2. URL 填写：`https://bot.lingti.com/wecom`
+3. Token 和 EncodingAESKey 填写之前记录的值
+4. 点击「保存」
+
+企业微信会向 `https://bot.lingti.com/wecom` 发送 GET 验证请求，云中继服务器使用你发送的凭据完成验证。如果看到保存成功，说明验证通过。
+
+验证成功后按 Ctrl+C 退出 verify 命令。
+
+**步骤 3：配置回调 URL**
+
+（已在步骤 2 中完成）
+
+**步骤 4：启动消息处理**
 
 ```bash
 # 1. 安装 lingti-bot
 curl -fsSL https://cli.lingti.com/install.sh | bash -s -- --bot
 
-# 2. 连接云中继
+# 2. 连接云中继（需要提供 WeCom 凭据）
 lingti-bot relay \
   --user-id YOUR_USER_ID \
   --platform wecom \
+  --wecom-corp-id YOUR_CORP_ID \
+  --wecom-agent-id YOUR_AGENT_ID \
+  --wecom-secret YOUR_SECRET \
+  --wecom-token YOUR_TOKEN \
+  --wecom-aes-key YOUR_AES_KEY \
   --provider deepseek \
-  --model deepseek-chat \
-  --api-key YOUR_API_KEY \
-  --base-url "https://api.deepseek.com/v1"
+  --api-key YOUR_API_KEY
 ```
 
-> **获取 User ID**：在企业微信应用中发送 `/whoami` 获取你的用户 ID。
+> **说明**：
+> - `--user-id`：客户端标识符，可以是任意唯一字符串（如邮箱、用户名等）
+> - `--wecom-corp-id`：企业 ID
+> - `--wecom-agent-id`：应用的 AgentId
+> - `--wecom-secret`：应用的 Secret
+> - `--wecom-token`：回调配置中的 Token
+> - `--wecom-aes-key`：回调配置中的 EncodingAESKey
+>
+> **工作原理**：当你运行 `lingti-bot relay` 时，客户端会通过 WebSocket 将 WeCom 凭据发送到云中继服务器。当企业微信发送回调验证请求时，云中继服务器使用这些凭据完成验证。这样你无需公网服务器即可使用企业微信机器人。
+
+也可以使用环境变量：
+
+```bash
+export WECOM_CORP_ID="your-corp-id"
+export WECOM_AGENT_ID="your-agent-id"
+export WECOM_SECRET="your-secret"
+export WECOM_TOKEN="your-callback-token"
+export WECOM_AES_KEY="your-encoding-aes-key"
+export AI_PROVIDER="deepseek"
+export AI_API_KEY="your-api-key"
+
+lingti-bot relay --user-id YOUR_USER_ID --platform wecom
+```
 
 ### 方式二：自建服务器部署
 
@@ -169,6 +293,28 @@ lingti-bot router --log verbose ...
 
 ## 架构说明
 
+### 云中继模式（推荐）
+
+```
+┌──────────────┐     ┌─────────────────────────────┐     ┌──────────────────┐
+│  企业微信     │     │    云中继服务器              │     │   本地客户端      │
+│  用户消息     │ ──▶ │  bot.lingti.com/wecom       │ ──▶ │  lingti-bot relay │
+│              │     │  (验证回调、转发消息)         │ WS  │  (AI 处理)        │
+└──────────────┘     └─────────────────────────────┘     └──────────────────┘
+       ▲                          │                              │
+       │                          │ ◀─────────────────────────────┘
+       │                          │        Webhook 响应
+       └──────────────────────────┘
+              发送消息 API
+```
+
+**优点**：
+- 无需公网服务器，本地运行客户端即可
+- 凭据动态同步，一键完成企业微信回调验证
+- 消息经云端中转，但 AI 处理在本地完成
+
+### 自建服务器模式
+
 ```
 ┌──────────────┐     ┌─────────────────────────────┐     ┌──────────────┐
 │  企业微信     │     │    公网服务器                │     │   AI 模型    │
@@ -255,7 +401,14 @@ sudo systemctl status lingti-bot
 
 ## 常见问题
 
-### Q: URL 验证失败？
+### Q: 云中继模式 URL 验证失败？
+
+1. **确保 verify 命令正在运行**：在企业微信后台保存配置之前，必须先运行 `lingti-bot verify` 命令
+2. **检查凭据是否正确**：Token 和 EncodingAESKey 必须与企业微信后台填写的完全一致
+3. **注意复制时不要有空格**：特别是 EncodingAESKey（43位）前后不能有空格
+4. **检查网络连接**：确保能连接到 `wss://bot.lingti.com/ws`
+
+### Q: 自建服务器 URL 验证失败？
 
 1. 确保服务器公网可访问，防火墙开放端口
 2. 检查 Token 和 EncodingAESKey 配置是否正确（注意复制时不要有空格）
