@@ -17,11 +17,10 @@ type MessageType string
 
 const (
 	// Client to server
-	MsgTypeChat     MessageType = "chat"
-	MsgTypeCommand  MessageType = "command"
-	MsgTypePing     MessageType = "ping"
-	MsgTypeAuth     MessageType = "auth"
-	MsgTypeSubscribe MessageType = "subscribe"
+	MsgTypeChat    MessageType = "chat"
+	MsgTypeCommand MessageType = "command"
+	MsgTypePing    MessageType = "ping"
+	MsgTypeAuth    MessageType = "auth"
 
 	// Server to client
 	MsgTypeResponse   MessageType = "response"
@@ -29,9 +28,6 @@ const (
 	MsgTypePong       MessageType = "pong"
 	MsgTypeError      MessageType = "error"
 	MsgTypeAuthResult MessageType = "auth_result"
-	MsgTypeToolCall   MessageType = "tool_call"
-	MsgTypeToolResult MessageType = "tool_result"
-	MsgTypeThinking   MessageType = "thinking"
 )
 
 // Message represents a gateway message
@@ -59,19 +55,6 @@ type ResponsePayload struct {
 type EventPayload struct {
 	Event string          `json:"event"`
 	Data  json.RawMessage `json:"data,omitempty"`
-}
-
-// ToolCallPayload represents a tool call notification
-type ToolCallPayload struct {
-	ToolName string         `json:"tool_name"`
-	Args     map[string]any `json:"args"`
-}
-
-// ToolResultPayload represents a tool result notification
-type ToolResultPayload struct {
-	ToolName string `json:"tool_name"`
-	Result   string `json:"result"`
-	Success  bool   `json:"success"`
 }
 
 // Client represents a connected WebSocket client
@@ -102,8 +85,6 @@ type Gateway struct {
 	ctx            context.Context
 	cancel         context.CancelFunc
 	upgrader       websocket.Upgrader
-	eventListeners map[string][]func(payload EventPayload)
-	eventMu        sync.RWMutex
 }
 
 // Config holds gateway configuration
@@ -132,7 +113,6 @@ func New(cfg Config) *Gateway {
 				return true // Allow all origins for local development
 			},
 		},
-		eventListeners: make(map[string][]func(payload EventPayload)),
 	}
 }
 
@@ -187,7 +167,6 @@ func (g *Gateway) run() {
 			g.clients[client.ID] = client
 			g.mu.Unlock()
 			logger.Info("[Gateway] Client connected: %s", client.ID)
-			g.emitEvent("client_connected", map[string]string{"client_id": client.ID})
 
 		case client := <-g.unregister:
 			g.mu.Lock()
@@ -197,7 +176,6 @@ func (g *Gateway) run() {
 			}
 			g.mu.Unlock()
 			logger.Info("[Gateway] Client disconnected: %s", client.ID)
-			g.emitEvent("client_disconnected", map[string]string{"client_id": client.ID})
 
 		case message := <-g.broadcast:
 			g.mu.RLock()
@@ -291,27 +269,6 @@ func (g *Gateway) Broadcast(msg Message) {
 	msg.Timestamp = time.Now().UnixMilli()
 	data, _ := json.Marshal(msg)
 	g.broadcast <- data
-}
-
-// OnEvent registers an event listener
-func (g *Gateway) OnEvent(event string, listener func(EventPayload)) {
-	g.eventMu.Lock()
-	defer g.eventMu.Unlock()
-	g.eventListeners[event] = append(g.eventListeners[event], listener)
-}
-
-// emitEvent emits an event to all listeners
-func (g *Gateway) emitEvent(event string, data any) {
-	g.eventMu.RLock()
-	listeners := g.eventListeners[event]
-	g.eventMu.RUnlock()
-
-	dataJSON, _ := json.Marshal(data)
-	payload := EventPayload{Event: event, Data: dataJSON}
-
-	for _, listener := range listeners {
-		go listener(payload)
-	}
 }
 
 // GetClientCount returns the number of connected clients
@@ -547,18 +504,6 @@ func (c *Client) sendMessage(msg Message) {
 	default:
 		logger.Debug("[Gateway] Send buffer full for client %s", c.ID)
 	}
-}
-
-// NotifyToolCall notifies the client about a tool call
-func (c *Client) NotifyToolCall(toolName string, args map[string]any) {
-	payload, _ := json.Marshal(ToolCallPayload{ToolName: toolName, Args: args})
-	c.sendMessage(Message{Type: MsgTypeToolCall, Payload: payload})
-}
-
-// NotifyToolResult notifies the client about a tool result
-func (c *Client) NotifyToolResult(toolName, result string, success bool) {
-	payload, _ := json.Marshal(ToolResultPayload{ToolName: toolName, Result: result, Success: success})
-	c.sendMessage(Message{Type: MsgTypeToolResult, Payload: payload})
 }
 
 // generateID generates a unique ID

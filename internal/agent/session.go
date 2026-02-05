@@ -18,7 +18,6 @@ const (
 type SessionSettings struct {
 	ThinkingLevel ThinkingLevel
 	Verbose       bool
-	Model         string // Override model for this session
 }
 
 // SessionStore manages session settings
@@ -56,7 +55,6 @@ func (s *SessionStore) Get(key string) *SessionSettings {
 	settings = &SessionSettings{
 		ThinkingLevel: ThinkMedium,
 		Verbose:       false,
-		Model:         "",
 	}
 	s.settings[key] = settings
 	return settings
