@@ -36,6 +36,70 @@
 curl -fsSL https://cli.lingti.com/install.sh | bash -s -- --bot
 ```
 
+## 为什么选择 lingti-bot？
+
+### lingti-bot vs OpenClaw
+
+|  | **lingti-bot** | **OpenClaw** |
+|--|----------------|--------------|
+| **语言** | 纯 Go 实现 | Node.js |
+| **运行依赖** | 无（单一二进制） | 需要 Node.js 运行时 |
+| **分发方式** | 单个可执行文件，复制即用 | npm 安装，依赖 node_modules |
+| **嵌入式设备** | ✅ 可轻松部署到 ARM/MIPS 等小型设备 | ❌ 需要 Node.js 环境 |
+| **安装大小** | ~15MB 单文件 | 100MB+ (含 node_modules) |
+| **输出风格** | 纯文本，无彩色 | 彩色输出 |
+| **设计哲学** | 极简主义，够用就好 | 功能丰富，灵活优先 |
+| **中国平台** | 原生支持飞书/企微/钉钉 | 需自行集成 |
+
+**为什么选择纯 Go + 纯文本输出？**
+
+> *"Simplicity is the ultimate sophistication."* — Leonardo da Vinci
+
+lingti-bot 将**简洁性**作为最高设计原则：
+
+1. **零依赖部署** — 单一二进制，`scp` 到任何机器即可运行，无需安装 Node.js、Python 或其他运行时
+2. **嵌入式友好** — 可编译到 ARM、MIPS 等架构，轻松部署到树莓派、路由器、NAS 等小型设备
+3. **纯文本输出** — 不使用彩色终端输出，避免引入额外的渲染库或终端兼容性问题
+4. **代码克制** — 每一行代码都有明确的存在理由，拒绝过度设计
+
+```bash
+# 克隆即编译，编译即运行
+git clone https://github.com/ruilisi/lingti-bot.git
+cd lingti-bot && make
+./dist/lingti-bot router --provider deepseek --api-key sk-xxx
+```
+
+### 单一二进制
+
+```bash
+# 编译
+make build
+
+# 即可使用
+./dist/lingti-bot serve
+```
+
+无需 Docker，无需数据库，无需云服务。
+
+### 本地优先
+
+所有功能都在本地运行，数据不会上传到云端。你的文件、日历、进程信息都安全地保留在本地。
+
+### 跨平台支持
+
+核心功能支持 macOS、Linux、Windows。macOS 用户可享受日历、提醒事项、备忘录、音乐控制等原生功能。
+
+**支持的目标平台：**
+
+| 平台 | 架构 | 编译命令 |
+|------|------|----------|
+| macOS | ARM64 (Apple Silicon) | `make darwin-arm64` |
+| macOS | AMD64 (Intel) | `make darwin-amd64` |
+| Linux | AMD64 | `make linux-amd64` |
+| Linux | ARM64 | `make linux-arm64` |
+| Linux | ARMv7 (树莓派等) | `make linux-arm` |
+| Windows | AMD64 | `make windows-amd64` |
+
 ## 功能概览
 
 ### MCP Server — 标准协议，无缝集成
@@ -751,72 +815,6 @@ make build  # 或: make darwin-arm64 / make linux-amd64
 "帮我整理桌面：列出超过60天的旧文件，然后移到废纸篓"
 "搜索最近的科技新闻，整理成备忘录"
 ```
-
----
-
-## 为什么选择 lingti-bot？
-
-### lingti-bot vs OpenClaw
-
-|  | **lingti-bot** | **OpenClaw** |
-|--|----------------|--------------|
-| **语言** | 纯 Go 实现 | Node.js |
-| **运行依赖** | 无（单一二进制） | 需要 Node.js 运行时 |
-| **分发方式** | 单个可执行文件，复制即用 | npm 安装，依赖 node_modules |
-| **嵌入式设备** | ✅ 可轻松部署到 ARM/MIPS 等小型设备 | ❌ 需要 Node.js 环境 |
-| **安装大小** | ~15MB 单文件 | 100MB+ (含 node_modules) |
-| **输出风格** | 纯文本，无彩色 | 彩色输出 |
-| **设计哲学** | 极简主义，够用就好 | 功能丰富，灵活优先 |
-| **中国平台** | 原生支持飞书/企微/钉钉 | 需自行集成 |
-
-**为什么选择纯 Go + 纯文本输出？**
-
-> *"Simplicity is the ultimate sophistication."* — Leonardo da Vinci
-
-lingti-bot 将**简洁性**作为最高设计原则：
-
-1. **零依赖部署** — 单一二进制，`scp` 到任何机器即可运行，无需安装 Node.js、Python 或其他运行时
-2. **嵌入式友好** — 可编译到 ARM、MIPS 等架构，轻松部署到树莓派、路由器、NAS 等小型设备
-3. **纯文本输出** — 不使用彩色终端输出，避免引入额外的渲染库或终端兼容性问题
-4. **代码克制** — 每一行代码都有明确的存在理由，拒绝过度设计
-
-```bash
-# 克隆即编译，编译即运行
-git clone https://github.com/ruilisi/lingti-bot.git
-cd lingti-bot && make
-./dist/lingti-bot router --provider deepseek --api-key sk-xxx
-```
-
-### 单一二进制
-
-```bash
-# 编译
-make build
-
-# 即可使用
-./dist/lingti-bot serve
-```
-
-无需 Docker，无需数据库，无需云服务。
-
-### 本地优先
-
-所有功能都在本地运行，数据不会上传到云端。你的文件、日历、进程信息都安全地保留在本地。
-
-### 跨平台支持
-
-核心功能支持 macOS、Linux、Windows。macOS 用户可享受日历、提醒事项、备忘录、音乐控制等原生功能。
-
-**支持的目标平台：**
-
-| 平台 | 架构 | 编译命令 |
-|------|------|----------|
-| macOS | ARM64 (Apple Silicon) | `make darwin-arm64` |
-| macOS | AMD64 (Intel) | `make darwin-amd64` |
-| Linux | AMD64 | `make linux-amd64` |
-| Linux | ARM64 | `make linux-arm64` |
-| Linux | ARMv7 (树莓派等) | `make linux-arm` |
-| Windows | AMD64 | `make windows-amd64` |
 
 ---
 
