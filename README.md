@@ -10,6 +10,26 @@
 
 > **为什么叫"灵小缇"？** 灵缇犬（Greyhound）是世界上跑得最快的犬，以敏捷、忠诚著称。灵小缇同样敏捷高效，是你忠实的 AI 助手。
 
+<table>
+<tr>
+<td width="33%"><img src="docs/images/demo-chat-1.png" alt="智能助手" /></td>
+<td width="33%"><img src="docs/images/demo-chat-2.png" alt="文件管理" /></td>
+<td width="33%"><img src="docs/images/demo-chat-3.png" alt="信息搜索" /></td>
+</tr>
+<tr>
+<td align="center"><sub>💬 智能对话</sub></td>
+<td align="center"><sub>📁 文件管理</sub></td>
+<td align="center"><sub>🔍 信息搜索</sub></td>
+</tr>
+</table>
+
+<details>
+<summary>📺 <b>后台运行演示</b> — <code>make && dist/lingti-bot router</code></summary>
+<br>
+<img src="docs/images/demo-terminal.png" alt="Terminal Demo" />
+<p><sub>克隆代码后直接编译运行，配合 DeepSeek 模型，实时处理钉钉消息</sub></p>
+</details>
+
 ## 安装
 
 ```bash

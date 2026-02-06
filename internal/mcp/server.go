@@ -9,7 +9,7 @@ import (
 const ServerName = "lingti-bot"
 
 // ServerVersion is set via ldflags at build time
-var ServerVersion = "1.2.2"
+var ServerVersion = "1.2.3"
 
 // NewServer creates a new MCP server with all tools registered
 func NewServer() *server.MCPServer {
